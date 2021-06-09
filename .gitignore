@@ -1,5 +1,11 @@
+Data/
+Images/
+AI/
+Dataout/
+GIS/
+Documents/
+Graphics/
+markdown/
+output/
 .Rproj.user
-.Rhistory
-.RData
-.Ruserdata
-Ajuda
+.Rproj

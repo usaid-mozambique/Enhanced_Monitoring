@@ -1,26 +1,22 @@
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
-library(readr)
-library(tidyr)
-library(dplyr)
-library(tibble)
-library(stringr)
-library(lubridate)
+
+library(tidyverse)
+library(glamr)
 library(janitor)
 library(readxl)
+library(openxlsx)
 library(glue)
-
-rm(list = ls())
 
 #-----------------------------------------------------------------------------------
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Ajuda/data_source/ERDSD/AJUDA_NewStructure_May11.xlsx", 
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_May11.xlsx", 
                                        sheet = "Jan_Jun2021")
 
 
-df1 <- read_excel("Ajuda/data_source/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
+df1 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
                   sheet = "Aug_Dec2020", col_types = c("text", 
                                                        "text", "text", "text", "text", "text", 
                                                        "numeric", "text", "numeric", "text", 
@@ -28,7 +24,7 @@ df1 <- read_excel("Ajuda/data_source/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx
                                                        "text", "text", "text", "text", "text", 
                                                        "text", "text", "numeric"))
 
-df2 <- read_excel("Ajuda/data_source/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
+df2 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
                   sheet = "Feb_Jul2020", col_types = c("text", 
                                                        "text", "text", "text", "text", "text", 
                                                        "numeric", "text", "numeric", "text", 
@@ -36,11 +32,13 @@ df2 <- read_excel("Ajuda/data_source/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx
                                                        "text", "text", "text", "text", "text", 
                                                        "text", "text", "numeric"))
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AjudaSiteMap/AJUDA Site Map.xlsx") %>% 
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/AJUDA Site Map.xlsx") %>% 
   dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
+#-----------------------------------------------------------------------------------
+# DEFINE PATH FOR OUTPUT
 
-em_erdsd <- ("Ajuda/output/em_erdsd.txt") 
+em_erdsd <- ("Dataout/em_erdsd.txt") 
 
 #-----------------------------------------------------------------------------------
 # UNION DATA FROM IMPORTS
@@ -57,7 +55,7 @@ df <- df %>% mutate(Date = excel_numeric_to_date(Months, date_system = "modern")
 #-----------------------------------------------------------------------------------
 # PROCESS DATAFRAME AND CALCULATE VARIABLES
 
-df_new <- df %>% 
+df_tidy <- df %>% 
   tidyr::pivot_wider(names_from = Indicator, values_from = Value, values_fill = NULL) %>% 
   dplyr::mutate(TX_NET_NEW = TX_CURR - Previous_TX_CURR,
                 ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
@@ -89,16 +87,6 @@ df_new <- df %>%
 #-----------------------------------------------------------------------------------
 # PRINT DATAFRAME TO DISK
 
-write_excel_csv(
-  df,
-  "~/R/r_projects/Hfr/output/em_erdsd.csv",
-  na = "NA",
-  append = FALSE,
-  delim = ",",
-  quote_escape = "double",
-  eol = "\n"
-)
-
 write_tsv(
-  df_new,
+  df_tidy,
   {em_erdsd})
