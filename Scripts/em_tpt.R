@@ -8,22 +8,24 @@ library(readxl)
 library(openxlsx)
 library(glue)
 
+# rm(list = ls())
+
 #---- DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! --------------------------
 
-month <- "2021-05-20" # UPDATE
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT/_CompileHistoric/TPT_2021_05.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2021-06-20" # UPDATE
+monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT/_CompileHistoric/TPT_2021_06.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-ARIEL <- "Data/Ajuda/ER_DSD_TPT/2021_05/Ariel_May_2021 (Retention Template).xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT/2021_05/CCS_May_2021 (Retention Template).xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT/2021_05/PartnerName_Jun_2021 (Retention Template)_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT/2021_05/EGPAF_May_2021 (Retention Template).xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT/2021_05/ICAP_Maio_2021 (Retention Template)_08JUN2021.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT/2021_05/FGH_Jun_2021 (Retention Template).xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT/2021_06/Ariel_July_2021 (Retention Template).xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT/2021_06/CCS_Jun_2021 (Retention Template).xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT/2021_06/PartnerName_Jul_2021 (Retention Template)_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT/2021_06/EGPAF_Jun_2021 (Retention Template)_05 07 2021.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT/2021_06/ICAP_Junho_2021 (Retention Template) 05072021.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT/2021_06/FGH_Jun_2021 (Retention Template) (003).xlsx"
 
 #---- DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING --------------------------------
 
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/AJUDA Site Map.xlsx") %>%
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_144.xlsx") %>%
   select(-c(sisma_id,
             SNU,
             Psnu,

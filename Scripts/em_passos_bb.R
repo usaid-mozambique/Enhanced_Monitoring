@@ -1,7 +1,7 @@
 #------- Choose Quarter and FY for Custom Indicator Export -----------------------
 
 #SELECT QUARTER
-Q_choose <- "Q3"
+Q_choose <- "Q2"
 
 #SELECT FY
 FY_choose <- 2021
@@ -18,27 +18,30 @@ library(openxlsx)
 library(glue)
 library(janitor)
 library(filenamer)
-
-# Data input from PASSOS tracker ------------------------------------------
+library(lubridate)
 
 #Joe's read files
-passos <- read_excel("Data/Passos/PASSOS FY2021 Tracker Mensal_Maio09062021.xlsx", 
+passos <- read_excel("Data/Passos/PASSOS_FY2021_Tracker_Mensal_Junho_08072021.xlsx",
                      sheet = "Dados e Metas PC", skip = 2)
-glimpse(passos) #review data structure                    
+glimpse(passos) #review data structure
 
-psnuuid_lookup <- read_excel("Documents/psnu_psnuuid.xlsx") %>% 
+psnuuid_lookup <- read_excel("Documents/psnu_psnuuid.xlsx") %>%
   dplyr::rename(PSNU = Psnu)
 
 #Bourke's read files
-# passos <- read_excel("~/KP Dashboard/Data Preparation/Custom Indicator Reporting/Mozambique/PASSOS FY2021 Tracker Mensal_Maio09062021.xlsx", 
+# Data input from PASSOS tracker ------------------------------------------
+# setwd("~/KP Dashboard/Data Preparation/Custom Indicator Reporting/Mozambique")
+# passos <- read_excel("Data/PASSOS FY2021 Tracker Mensal_Maio09062021.xlsx",
 #                      sheet = "Dados e Metas PC", skip = 2)
 # glimpse(passos) #review data structure
 # 
-# psnuuid_lookup <- read_excel("~/KP Dashboard/Data Preparation/Custom Indicator Reporting/Mozambique/psnu_psnuuid.xlsx") %>% 
+# psnuuid_lookup <- read_excel("Data/psnu_psnuuid.xlsx") %>%
 #   dplyr::rename(PSNU = Psnu)
 
 
 #------- PROCESS PASSOS TRACKER -----------------------
+
+unique(passos$Month)
 
 passos_format <- passos  %>%  
   dplyr::filter(`Data Type` == "Result") %>%
@@ -68,9 +71,22 @@ passos_format <- passos  %>%
                            "PWID" = "People who inject drugs (PWID)",
                            "TG" = "Transgender people (TG)",
                            "Prisoners" = "People in prisons and other closed settings",
-                           "Non-KP" = "Non-KP (general population)")) %>%
-  dplyr::select (SNU, PSNU, FY, Quarter, month, date, Population, indicator, val)
+                           "Non-KP" = "Non-KP (general population)"),
+         Population = replace_na(Population, "Non-KP (general population)")) %>%
+  dplyr::select (SNU, PSNU, FY, Quarter, month, date, Population, indicator, val) %>%
+  dplyr::mutate(date = if_else(Quarter == "Q1" & FY == year(date), make_date(year(date)-1, month(date), day(date)), make_date(year(date), month(date), day(date)))) %>%
+  arrange(desc(date)) %>%
+  glimpse()
+
+help("replace_na")
+passos_check <- passos_format %>% 
+  filter(FY == 2021 & Quarter == "Q4") %>% glimpse()
+                
+unique(passos_format$Population)
+
   
+table(passosfy21q4$date)
+
 #------- CONTINUE PROCESSING PASSOS TRACKER -----------------------
 
 passos_format_2 <- passos_format %>%  
@@ -80,7 +96,7 @@ passos_format_2 <- passos_format %>%
          operatingunit = "Mozambique",
          age = NA,
          sex = NA,
-         otherdisaggregate = "Site Support Type: PEPFAR supported") %>%
+         otherdisaggregate = if_else(str_detect(indicator, "TX") & str_detect(indicator, "VERIFY"), "Site Support Type: PEPFAR supported", "")) %>%
   mutate(PSNU = recode(PSNU,
                         "Chongoene" = "Chonguene",
                         "Muchungué" = "Chibabava"), # RENAME THESE DISTRICTS WHICH ARE SPELLED DIFFERENTLY IN DATIM
@@ -121,7 +137,6 @@ passos_format_2 <- passos_format %>%
   glimpse()
 
 #------- Create list and function for filtering -----------------------
-
 MER <- c('KP_PREV','HTS_TST','HTS_TST_POS') #establish string to match against
 `%notin%` <- Negate(`%in%`) #create function for inverse of %in%
 
@@ -130,10 +145,10 @@ MER <- c('KP_PREV','HTS_TST','HTS_TST_POS') #establish string to match against
 cirg_kp <- passos_format_2  %>%
   dplyr::mutate(IndicatorType = case_when(indicator %notin% MER ~ "Custom")) %>%
   dplyr::filter(val!= "NA", IndicatorType == "Custom", fy == FY_choose, quarter == Q_choose) %>%
-  group_by(IndicatorType, fundingsource, reportingperiod,	orgunit,	psnuuid,	mech_code,	partner,	operatingunit,	psnu, indicator,	sex,	age,	population,	otherdisaggregate,	numdenom) %>%
+  group_by(reportingperiod,	orgunit,	psnuuid,	mech_code,	partner,	operatingunit,	psnu, indicator,	sex,	age,	population,	otherdisaggregate,	numdenom) %>%
   summarise(val = sum(val), .groups = 'drop') %>% 
   ungroup() %>% 
-  dplyr::select(IndicatorType, reportingperiod, orgunit, orgnunituid = psnuuid, mech_code, partner, operatingunit,	psnu, indicator,	sex,	age,	population,	otherdisaggregate,	numdenom, val) %>%
+  dplyr::select(reportingperiod, orgunit, orgnunituid = psnuuid, mech_code, partner, operatingunit,	psnu, indicator,	sex,	age,	population,	otherdisaggregate,	numdenom, val) %>%
   glimpse()
 
 #------- Name File -----------------------
@@ -155,7 +170,7 @@ filename
 #export to spreadsheet for submission via google forms at https://docs.google.com/forms/d/e/1FAIpQLSd1XtCoRZ-22zp9cOi24P2OhEdq-SYS0QORZkUtQj8UMei7RQ/viewform?gxids=7628
 #Initial; Long; KP --> assign filename
 
-write.xlsx(cirg_kp, file = filename, sheetName = "CIRG", startRow = 2, append = TRUE)
+write.xlsx(cirg_kp, file = filename, sheetName = "CIRG", startRow = 2, append=TRUE)
 
 # REVIEW OUTPUT
 names(passos_format_2)
@@ -168,6 +183,7 @@ table(passos_format_2$reportingperiod)
 psnuuid_tester <- passos_format_2  %>% 
   filter(psnuuid == "y")
 
+
 #------- CREATE Long file, by Month for dashboard -----------------------
 em_kp_monthly <- passos_format_2  %>%
   group_by(fundingsource, fy, date, month, snu, orgunit,	mech_code,	partner,	operatingunit,	psnu, psnuuid, indicator, numdenom, population,	otherdisaggregate) %>%
@@ -176,24 +192,13 @@ em_kp_monthly <- passos_format_2  %>%
   filter(val!= "NA") %>%
     dplyr::rename(FY = fy, Province = snu, District = psnu, Orgnunituid = psnuuid, NumDen = numdenom, Date = date, Month = month) %>%
     dplyr::mutate(Partner = "PASSOS",
-                  PatientType = case_when(!str_detect(population, "Non-KP") ~ "KeyPop"),
-                  KeyPop = case_when(PatientType == "KeyPop" ~ str_extract(population, "(?<=\\().*(?=\\))"))) %>%
-    dplyr::select(Partner, Province, District, Orgnunituid, fundingsource, NumDen, PatientType, KeyPop, Date, Month, indicator, KeyPop, val) %>%
+                  PatientType = if_else(!str_detect(population, "Non-KP"), "Key Populations", population),
+                  KeyPop = if_else(str_detect(population, "prison"), "Prisoners", if_else(PatientType == "Key Populations", str_extract(population, "(?<=\\().*(?=\\))"), population))) %>%
+    dplyr::select(Partner, Province, District, Orgnunituid, fundingsource, NumDen, PatientType, KeyPop, FY, Date, Month, indicator, KeyPop, val) %>%
    glimpse()
 
 
-filename2 <- "em_kp_long.txt"
-filename2 <- tag(filename2, export_date)
-filename2 <- set_fpath(filename2, "Dataout")
-
-filename2
-
-#------- PRINT WIDE PROGRAM DATA TO DESK -----------------------
-
-readr::write_tsv(
-  em_kp_monthly,
-  filename2,
-  na ="")
+write.xlsx(cirg_kp, file = filename2, sheetName = "ProgramData",startRow = 2, append=TRUE)
 
 #------- CREATE Wide file, by Month for dashboard -----------------------
 em_kp_monthly_wide <- em_kp_monthly %>%
@@ -214,4 +219,22 @@ em_kp_monthly_wide <- em_kp_monthly %>%
     em_kp_monthly_wide,
     filename3,
     na ="")
+  
+
+  #------- NAME Long BEFORE PRINT TO DESK -----------------------
+  
+  filename2 <- "em_kp_long.txt"
+  filename2 <- tag(filename2, export_date)
+  filename2 <- set_fpath(filename2, "Dataout")
+  
+  filename2
+  
+  #------- PRINT Long PROGRAM DATA TO DESK -----------------------
+  
+  readr::write_tsv(
+    em_kp_monthly,
+    filename2,
+    na ="")
+  
+  unique(em_kp_monthly$FY)
   

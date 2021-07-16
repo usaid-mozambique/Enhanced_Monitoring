@@ -7,32 +7,27 @@ library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
+library(ggthemes)
+library(scales)
 
 #-----------------------------------------------------------------------------------
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_May11.xlsx", 
-                                       sheet = "Jan_Jun2021")
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_July12.xlsx", 
+                                       sheet = "Jan_Jun2021",
+                  col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
 
 df1 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
-                  sheet = "Aug_Dec2020", col_types = c("text", 
-                                                       "text", "text", "text", "text", "text", 
-                                                       "numeric", "text", "numeric", "text", 
-                                                       "numeric", "text", "text", "text", 
-                                                       "text", "text", "text", "text", "text", 
-                                                       "text", "text", "numeric"))
+                  sheet = "Aug_Dec2020",
+                  col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
 df2 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
-                  sheet = "Feb_Jul2020", col_types = c("text", 
-                                                       "text", "text", "text", "text", "text", 
-                                                       "numeric", "text", "numeric", "text", 
-                                                       "numeric", "text", "text", "text", 
-                                                       "text", "text", "text", "text", "text", 
-                                                       "text", "text", "numeric"))
+                  sheet = "Feb_Jul2020",
+                  col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/AJUDA Site Map.xlsx") %>% 
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_144.xlsx") %>% 
   dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
 #-----------------------------------------------------------------------------------
@@ -90,3 +85,48 @@ df_tidy <- df %>%
 write_tsv(
   df_tidy,
   {em_erdsd})
+
+#-----------------------------------------------------------------------------------
+# VISUALS WITH GGPLOT2
+
+df_tidy %>% 
+  ggplot(aes(x = Date, y = TX_CURR, color = Partner)) + 
+  geom_col() + 
+  labs(title = "TX_CURR Trend by Partner",
+       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
+       color = "Partner") + 
+  theme_solarized() + 
+  theme(axis.title = element_text())
+
+ggplot(data = df_tidy) +
+  geom_col(
+    mapping = aes(x = Date, y = TX_CURR, color = Partner)
+  ) + 
+  labs(title = "TX_CURR Trend by Partner",
+       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
+       color = "Partner") + 
+  theme_solarized() + 
+  theme(axis.title = element_text())
+  
+
+df_tidy_group <- df_tidy %>% 
+  group_by(Date, Partner) %>%
+  summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE))
+
+
+ggplot(df_tidy_group, aes(Date, TX_CURR, color = Partner)) +
+  geom_line() +
+  theme_wsj()
+
+ggplot(df_tidy_group, aes(Date, TX_CURR, color = Partner)) +
+  geom_col() +
+  labs(title = "TX_CURR Trend by Partner",
+       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
+       color = "Partner") + 
+  theme_solarized() + 
+  theme(axis.title = element_text())
+
+
+  theme_wsj()
+
+
