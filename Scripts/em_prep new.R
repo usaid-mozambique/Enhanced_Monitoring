@@ -2,6 +2,7 @@
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
 
 library(tidyverse)
+library(lubridate)
 library(glamr)
 library(janitor)
 library(readxl)
@@ -9,38 +10,46 @@ library(openxlsx)
 library(glue)
 library(ggthemes)
 
-# DEFINE HFR PERIOD AND SET PATH -----------------------------------------------------------------------------------
+# DEFINE PERIODS AND SET PATH - NNEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 # 
 
-month <- "2021-06-01"
-date_open <- "2021-04-01" # ONLY NEEDED FOR CIRG
-date_close <- "2021-06-01" # ONLY NEEDED FOR CIRG
-date_cirg <- "FY21 Q3" # ONLY NEEDED FOR CIRG
-input <- "C:/Users/josep/Documents/R/r_projects/Hfr"
+month <- "01/07/2020" # UPDATE
+monthly_dataset <- ("Data/Ajuda/PrEP/_CompileHistoric/PrEP_2020_07.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP Reprt_Julho_2020.xlsx"
 
-# IMPORT DATASET -----------------------------------------------------------------------------------
-# 
-# DATASET SOURCE: MONTHLY ECHO PREP SUBMISSION THAT ACCOMPANIES ER/DSD SUBMISSION
 
-prep_compile <- read_excel("Data/Ajuda/PrEP/prep_compile.xlsx", .name_repair = "universal") %>%
+
+#date_open <- "2021-07-01" # ONLY NEEDED FOR CIRG
+#date_close <- "2021-09-01" # ONLY NEEDED FOR CIRG
+#date_cirg <- "FY21 Q4" # ONLY NEEDED FOR CIRG
+
+#input <- "C:/Users/josep/Documents/R/r_projects/Hfr"
+
+# IMPORT DATASETS -----------------------------------------------------------------------------------
+# DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING -------------------------------- --------------------------------
+
+prep_submission <- read_excel({prep_submission}, sheet = "PrEP_Monthly report", .name_repair = "universal") %>%
   glimpse()
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/AJUDA Site Map.xlsx") %>%
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>%
   dplyr::select(orgunituid, SNU, Psnu, Sitename) %>%
   dplyr::rename(psnu = Psnu,
                 orgunit = Sitename,
                 snu = SNU)
 
-ajuda_site_map_2 <- read_excel("~/GitHub/AJUDA_Site_Map/AJUDA Site Map.xlsx") %>% 
-  dplyr::select(-c(sisma_id, SNU, Psnu, Sitename)) %>% 
-  dplyr::rename(partner = `IP FY20`)
+historic_files_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
+data_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED IN SPECIFIC CODE TO COMPILE THE ABOVE LIST OF .CSV FILES
+
+historic_dataset <- ("Dataout/em_prep.txt")  # PATH AND NAME OF COMPILED PrEP DATASET THAT IS SHARED WITH CDC EVERY MONTH
+
 
 # PROCESS DATASET & CREATE ENHANCED MONITORING DATAFRAME -----------------------------------------------------------------------------------
 # 
 
-em_prep_base <- prep_compile %>%
-  tidyr::pivot_longer(cols= !c(Site, DATIM_Code, Month), names_to = "indicator", values_to = "value") %>% 
+em_prep_base <- prep_submission %>%
+  tidyr::pivot_longer(cols= !c(Site, DATIM_code, Month), names_to = "indicator", values_to = "value") %>% 
   dplyr::mutate(
+    Month = {month},
     sex = dplyr::case_when(stringr::str_detect(indicator, "_female") ~ "Female",
                            stringr::str_detect(indicator, "_male") ~ "Male"),
     age = dplyr::case_when(stringr::str_detect(indicator, "_15_19") ~ "15-19",
@@ -69,12 +78,11 @@ em_prep_base <- prep_compile %>%
     agecoarse = replace_na(agecoarse, "15+")
   ) %>%
   tidyr::drop_na(indicator_2) %>%
-  dplyr::filter(value != 0) %>%
   dplyr::select(-c(indicator)) %>%
-  dplyr::left_join(ajuda_site_map, c("DATIM_Code" = "orgunituid")) %>%
+  dplyr::left_join(ajuda_site_map, c("DATIM_code" = "orgunituid")) %>%
   dplyr::select(c(date = Month, 
                   site = orgunit,
-                  orgunituid = DATIM_Code,
+                  orgunituid = DATIM_code,
                   district = psnu, 
                   province = snu,
                   indicator = indicator_2,
@@ -82,13 +90,76 @@ em_prep_base <- prep_compile %>%
                   age, 
                   agecoarse, 
                   poptype, 
-                  value))
+                  value)) %>% 
+  glimpse()
 
 em_prep <- em_prep_base %>% 
   dplyr::group_by(date, site, orgunituid, district, province, indicator, sex, age, agecoarse, poptype) %>% 
   summarize_at(vars(value), sum, na.rm = TRUE) %>% 
   tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
-  dplyr::left_join(ajuda_site_map_2)
+  dplyr::left_join(ajuda_site_map)
+
+
+#---- WRITE MONTHLY PrEP CSV TO DISK -----------------------
+
+readr::write_csv(
+  em_prep,
+  {monthly_dataset})
+
+#---- DEFINE PATH AND SURVEY MONTHLY PrEP DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
+historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+
+#---- ROW BIND ALL HISTORIC FILES AND GENERATE OUTPUT (THIS OUTPUT IS INTENDED FOR USE WITH THE USAID MONTHLY AJUDA DASHBOARD) -----------------------
+
+prep_tidy_history <- historic_files %>%
+  map(~ read_csv(file.path(data_path, .))) %>%
+  reduce(rbind) %>%
+  dplyr::left_join(ajuda_site_map) %>% 
+  dplyr::rename(Site = `orgunit`) %>% 
+  mutate(date = dmy(date)) %>% 
+  glimpse()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# dplyr::filter(value != 0) %>%
+
+
+
+
+
+
+# GGPLOT VISUALS -----------------------------------------------------------------------------------
+# 
+
+em_prep_new <- prep_tidy_history %>% 
+  tidyr::drop_na(poptype) %>% 
+  dplyr::group_by(poptype, date) %>% 
+  summarize(PrEP_NEW_VERIFY = sum(PrEP_NEW_VERIFY))
+
+ggplot(em_prep_new, aes(date, PrEP_NEW_VERIFY, fill = poptype)) +
+  geom_col() + 
+  theme_fivethirtyeight() +
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        plot.caption = element_text(size = 9),
+        axis.text = element_text(size = 10),
+        legend.position="right", legend.direction = "vertical") +
+  labs(title = "PrEP_NEW Trend",
+       caption = "Data source: ECHO Monthly PrEP Reporting")
+
 
 # SUBSET DATAFRAME TO CREATE HFR SUBMISSION -----------------------------------------------------------------------------------
 # 
@@ -116,7 +187,7 @@ hfr_prep <- em_prep_base %>%
                   otherdisaggregate, 
                   val))
 
-# SUBSET DATAFRAME TO CREATE CI SUBMISSION -----------------------------------------------------------------------------------
+# SUBSET DATAFRAME TO CREATE CIRG SUBMISSION -----------------------------------------------------------------------------------
 
 cirg_prep <- em_prep_base %>% 
   dplyr::filter(date >= as.Date(date_open) & date <= as.Date(date_close)) %>% 
@@ -142,7 +213,7 @@ cirg_prep <- em_prep_base %>%
                 sex = if_else(indicator == "PrEP_1MONTH", "Unknown", sex)
                 #age = dplyr::case_when(indicator == "PrEP_1MONTH" ~ "Unknown"),
                 #sex = dplyr::case_when(indicator == "PrEP_1MONTH" ~ "Unknown")
-                ) %>% 
+  ) %>% 
   dplyr::select(reportingperiod, 
                 orgunit, 
                 orgunituid, 
@@ -162,34 +233,6 @@ cirg_prep <- em_prep_base %>%
   ungroup()
 
 
-# PRINT EXCEL DOCUMENTS TO COMPUTER -----------------------------------------------------------------------------------
-# 
 
-readr::write_tsv(
-  em_prep,
-  "Dataout/em_prep.txt",
-  na ="")
-
-openxlsx::write.xlsx(em_prep, file = "Dataout/em_prep.xlsx", sheetName = "em_prep")
-openxlsx::write.xlsx(hfr_prep, file = "~/R/r_projects/Hfr/output/hfr_prep.xlsx", sheetName = "hfr_prep")
-openxlsx::write.xlsx(cirg_prep, file = "~/R/r_projects/Hfr/output/cirg_prep.xlsx", sheetName = "cirg_prep")
-
-# GGPLOT VISUALS -----------------------------------------------------------------------------------
-# 
-
-em_prep_new <- em_prep_base %>% 
-  dplyr::filter(indicator == "PrEP_NEW_VERIFY") %>% 
-  tidyr::drop_na(poptype) %>% 
-  dplyr::group_by(poptype, date) %>% 
-  summarize(value = sum(value))
-
-ggplot(em_prep_new, aes(date, value, fill = poptype)) +
-  geom_col() + 
-  theme_fivethirtyeight() +
-  theme(plot.title = element_text(size = 12, face = "bold"),
-        plot.caption = element_text(size = 9),
-        axis.text = element_text(size = 10),
-        legend.position="right", legend.direction = "vertical") +
-  labs(title = "PrEP_NEW Trend",
-       caption = "Data source: ECHO Monthly PrEP Reporting")
-
+openxlsx::write.xlsx(hfr_prep, file = "Dataout/HFR/hfr_prep.xlsx", sheetName = "hfr_prep")
+openxlsx::write.xlsx(cirg_prep, file = "Dataout/CIRG/cirg_prep.xlsx", sheetName = "cirg_prep")

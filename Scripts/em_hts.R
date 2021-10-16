@@ -17,7 +17,7 @@ library(ggthemes)
 #-----------------------------------------------------------------------------------
 # HFR MONTH
 
-month <- "2021-06-01"
+month <- "2021-09-01"
 
 # IMPORT TESTING DATASETS & AJUDA Site Map -----------------------------------------------------------------------------------
 # 
@@ -27,7 +27,7 @@ hts_ci_lig <- read_excel("Data/MISAU/ats_ci_lig_2021.xlsx") ## KEY SISMA SEARCH 
 hts_kp_hist <- read_excel("Data/MISAU/ats_hist_2021.xlsx")  ## KEY SISMA SEARCH WORD(S) "historial", "chave"
 hts_smi <- read_excel("Data/MISAU/ats_smi_2021.xlsx", .name_repair = "universal") ## SAVED SISMA REPORT "ats_smi_misau__new2"
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_144.xlsx")
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx")
 
 # IMPORT HISTORIC COMPILED DATASETS -----------------------------------------------------------------------------------
 # 
@@ -325,13 +325,20 @@ readr::write_csv(
 remove(list=c("AJUDA_Site_Map", "hfr_hts_pos", "hfr_hts_tst", "hts_all", "hts_ci_lig", "hts_ci_lig_all", "hts_compile_year", "hts_kp_hist", "hts_kp_hist_all", "hts_result", "hts_smi", "hts_smi_all", "hts_smi_pos", "output_em_hts_2019", "output_em_hts_2020"))
 
 
-# TEST SUMS CODE
+# TEST SUMS CODE AND PLOT DATA
 
 em_hts_tst <- em_hts_tidy %>% 
   select(Date:ResultStatus, HTS_TST) %>% 
   drop_na(HTS_TST) 
 
+em_hts_tst_pos <- em_hts_tidy %>% 
+  select(Date:ResultStatus, HTS_TST_POS) %>% 
+  drop_na(HTS_TST_POS) 
+
 ggplot(data = em_hts_tst) +
   geom_col(mapping = aes(y = HTS_TST, x = Date))
+
+ggplot(data = em_hts_tst_pos) +
+  geom_col(mapping = aes(y = HTS_TST_POS, x = Date))
 
 

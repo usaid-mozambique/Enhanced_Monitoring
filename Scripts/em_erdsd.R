@@ -14,23 +14,27 @@ library(scales)
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_July12.xlsx", 
-                                       sheet = "Jan_Jun2021",
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Sep12.xlsx", 
+                                       sheet = "Jul_Dec2021",
+                  col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
+
+df1 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_July12.xlsx", 
+                  sheet = "Jan_Jun2021",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
 
-df1 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
+df2 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
                   sheet = "Aug_Dec2020",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
-df2 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
+df3 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
                   sheet = "Feb_Jul2020",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_144.xlsx") %>% 
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>% 
   dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
-#-----------------------------------------------------------------------------------
+#-------------------------------------------------------------------  ----------------
 # DEFINE PATH FOR OUTPUT
 
 em_erdsd <- ("Dataout/em_erdsd.txt") 
@@ -38,7 +42,7 @@ em_erdsd <- ("Dataout/em_erdsd.txt")
 #-----------------------------------------------------------------------------------
 # UNION DATA FROM IMPORTS
 
-df <- dplyr::bind_rows(df0, df1, df2)
+df <- dplyr::bind_rows(df0, df1, df2, df3)
 
 #-----------------------------------------------------------------------------------
 # COERCE 5 DIGIT NUMBER TO DATE AND REMOVE UNNEEDED VARIABLES
@@ -69,7 +73,9 @@ df_tidy <- df %>%
                 TX_CURR_KP = case_when(PatientType == "KeyPop" ~ TX_CURR),
                 TX_NEW_KP = case_when(PatientType == "KeyPop" ~ TX_NEW),
                 TX_CURR_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_CURR),
-                TX_NEW_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_NEW)) %>% 
+                TX_NEW_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_NEW),
+                AgeCoarse = if_else(PatientType %in% c("Pediatrics"), "<15", 
+                                    if_else(PatientType %in% c("Adults", "Non-Pregnant Adults", "Pregnant", "Breastfeeding"), "15+", ""))) %>% 
   dplyr::left_join(AJUDA_Site_Map, by = c("Orgunituid" = "orgunituid")) %>% 
   dplyr::select(-c(SISMA_code, Period, `IP FY20`, Type, ajuda, ajuda_phase, Months, `Source.Name`, HF_Export, province_HF, IMER1, IMER1B, ER1Month, ER4Month, TX_CURR, TX_NEW)) %>% 
   dplyr::rename(TX_CURR = TX_CURR_2,
@@ -77,7 +83,8 @@ df_tidy <- df %>%
   dplyr::filter(!PatientType == "Total") %>% 
   dplyr::relocate(Date, .before = 1) %>% 
   dplyr::relocate(sisma_id, Lat, Long, .before = 7) %>% 
-  dplyr::relocate(emr, epts, idart, disa, conflict, corridor, ovc, ycm, pmtct_pda, .before = 10)
+  dplyr::relocate(emr, epts, idart, disa, conflict, corridor, ovc, ycm, pmtct_pda, .before = 10) %>% 
+  dplyr::relocate(AgeCoarse, .after = 20)
 
 #-----------------------------------------------------------------------------------
 # PRINT DATAFRAME TO DISK
