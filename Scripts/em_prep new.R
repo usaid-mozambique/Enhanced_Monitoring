@@ -13,9 +13,9 @@ library(ggthemes)
 # DEFINE PERIODS AND SET PATH - NNEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 # 
 
-month <- "01/07/2020" # UPDATE
-monthly_dataset <- ("Data/Ajuda/PrEP/_CompileHistoric/PrEP_2020_07.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP Reprt_Julho_2020.xlsx"
+month <- "01/10/2021" # UPDATE
+monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2021_10.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Oct_2021.xlsx"
 
 
 
@@ -40,7 +40,7 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148
 historic_files_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
 data_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED IN SPECIFIC CODE TO COMPILE THE ABOVE LIST OF .CSV FILES
 
-historic_dataset <- ("Dataout/em_prep.txt")  # PATH AND NAME OF COMPILED PrEP DATASET THAT IS SHARED WITH CDC EVERY MONTH
+historic_dataset <- "Dataout/em_prep.txt"  # PATH AND NAME OF COMPILED PrEP DATASET THAT IS SHARED WITH CDC EVERY MONTH
 
 
 # PROCESS DATASET & CREATE ENHANCED MONITORING DATAFRAME -----------------------------------------------------------------------------------

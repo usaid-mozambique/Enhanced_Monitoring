@@ -10,11 +10,12 @@ library(glue)
 library(ggthemes)
 library(scales)
 
+
 #-----------------------------------------------------------------------------------
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Sep12.xlsx", 
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Oct21.xlsx", 
                                        sheet = "Jul_Dec2021",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
@@ -31,7 +32,7 @@ df3 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx",
                   sheet = "Feb_Jul2020",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>% 
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_fy22q1.xlsx") %>% 
   dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
 #-------------------------------------------------------------------  ----------------
