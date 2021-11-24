@@ -8,7 +8,7 @@ library(readxl)
 library(openxlsx)
 library(glue)
 
-# rm(list = ls())
+rm(list = ls())
 
 #---- DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! --------------------------
 
@@ -17,11 +17,11 @@ monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/_CompileHistoric/mqvl_2021_10.csv"
 
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
 ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Fundação ARIEL Oct_21 (Retention Template)_FY22.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/CCS_Oct_21 (Retention Template)_FY22.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22 (1).xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22_ECHO.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/EGPAF_Oct_21 (Retention Template)_FY22 (003)_11 11 2021.xlsx"
 ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/ICAP_Oct_21 (Retention Template)_FY22_05112021.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/FGH_Oct_21 (Retention Template)_FY22.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/FGH_Oct_21 (Retention Template)_FY22_Updated_CS_Namagola_lugea_and CS_Palane.xlsx"
 
 #---- DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING --------------------------------
 
@@ -42,7 +42,9 @@ historic_dataset <- ("Dataout/em_mqvl.txt")  # PATH AND NAME OF COMPILED USAID D
 
 #---- IMPORT AND MERGE DOD DATA -------------------------------------------------------
 
-dod <- read_excel({DOD}, sheet = "Monitoria Intensiva de CV", skip = 10) %>%
+dod <- read_excel("Data/Ajuda/ER_DSD_TPT_VL/2021_10/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx", 
+                  sheet = "Monitoria Intensiva de CV", 
+                  skip = 10) %>%
   filter(Partner=="JHPIEGO-DoD")
 
 #---- IMPORT AND MERGE ECHO DATA -------------------------------------------------------
