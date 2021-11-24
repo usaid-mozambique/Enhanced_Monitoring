@@ -6,12 +6,11 @@ library(glamr)
 library(janitor)
 library(readxl)
 library(openxlsx)
-library(glue)
 library(filenamer)
 
 rm(list = ls())
 
-#---- LOAD DATASETS --------------------------
+# LOAD DATASETS -----------------------------------------------------------
 
 month <- "2021-09-01"
 period <- "FY21Q4"
@@ -40,9 +39,7 @@ CCS <- read_excel("Data/MISAU/KP/CCS_KeyPop_MISAU_DataRequest_FY21Qtr4_V4.1.xlsx
 ICAP <- read_excel("Data/MISAU/KP/ICAP_KeyPop_MISAU_DataRequest_FY21Qtr4_V4.1.xlsx", 
                   sheet = "FY21Qtr4 Data Entry Form", skip = 7)
 
-
-
-#---- COMPILE & MUNGE KP DATASET --------------------------
+# COMPILE & MUNGE KP DATASET ----------------------------------------------
 
 ip_compile <- bind_rows(ECHO, EGPAF, FGH, ARIEL, CCS, ICAP) %>% 
   filter(across(c(TX_NEW_Total:`TX_RET_N_REC_25+`), ~ !is.na(.x))) %>%
@@ -71,8 +68,7 @@ ip_compile <- bind_rows(ECHO, EGPAF, FGH, ARIEL, CCS, ICAP) %>%
   pivot_wider(names_from = indicator, values_from = value) %>% 
   glimpse()
 
-
-#---- COMPILE & MUNGE KP DATASET --------------------------
+# COMPILE & MUNGE KP DATASET ----------------------------------------------
 
 filename <- "em_kp_misau.txt"
 filename <- tag(filename)
