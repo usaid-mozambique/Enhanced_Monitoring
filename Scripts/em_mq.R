@@ -142,7 +142,7 @@ mq_final <- mq %>%
   left_join(ajuda, by = c("DATIMUID" = "orgunituid")) %>% 
   select(period,
          orgunituid = DATIMUID,
-         partner = Partner,
+         parceiro = Partner,
          provincia = snu,
          distrito = psnu,
          us = sitename,
@@ -153,7 +153,7 @@ mq_final <- mq %>%
   mutate(row_n = row_number()) %>% 
   pivot_wider(names_from = indicador, values_from = value, values_fill = 0) %>% 
   select(-(row_n)) %>%
-  group_by(period, partner, orgunituid, provincia, distrito, us, idade) %>% 
+  group_by(period, parceiro, orgunituid, provincia, distrito, us, idade) %>% 
   summarize(across(PEDIDO_1A_D:ALTOCV12MESES_2A_N, sum, na.rm = TRUE)) %>% 
   ungroup()
 
