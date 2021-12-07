@@ -136,7 +136,7 @@ mq <- dplyr::bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
-# JOIN AJUDA META DATA AND CLEAN DATAFRAME ----------------------------------------------------
+# JOIN AJUDA META, PIVOT WIDE AND CLEAN-UP FINAL OUTPUT ----------------------------------------------------
 
 mq_final <- mq %>% 
   left_join(ajuda, by = c("DATIMUID" = "orgunituid")) %>% 
