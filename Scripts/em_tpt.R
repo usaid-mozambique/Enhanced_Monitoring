@@ -15,8 +15,8 @@ rm(list = ls())
 month <- "2021-11-20" # UPDATE
 monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_11.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-# DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
-# ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/Ariel_May_2021 (Retention Template) actualizado.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/DOD__Nov_2021final 21112021 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/FUNDAÇÃO_ARIEL_Nov_21 (Retention Template)_FY22.xlsx"
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/Nov_21 (Retention Template)_FY22.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/PartnerName_Month_2022 (Retention Template)_Nov 2021_ECHO.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/EGPAF_Nov_21 (Retention Template)_FY22 (003)_07 12 2021.xlsx"
@@ -111,7 +111,7 @@ readr::write_csv(
 
 # TEMPORARY WORKAROUND ----------------------------------------------------
 
-temp <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/manual_compile/TPT_2021_03_10.csv")
+temp <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/manual_compile/TPT_2021_03_11.csv")
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
