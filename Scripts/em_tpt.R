@@ -12,16 +12,16 @@ rm(list = ls())
 
 # DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! ------------
 
-month <- "2021-05-20" # UPDATE
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_05.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2021-11-20" # UPDATE
+monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_11.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
 # DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/Ariel_May_2021 (Retention Template) actualizado.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/CCS_May_2021 (Retention Template).xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/PartnerName_Jun_2021 (Retention Template)_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/EGPAF_May_2021 (Retention Template) versao 2.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/Icap_Maio_2021 (Retention Template) TPT2021.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_05/FGH_Jun_2021 (Retention Template).xlsx"
+# ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/Ariel_May_2021 (Retention Template) actualizado.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/Nov_21 (Retention Template)_FY22.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/PartnerName_Month_2022 (Retention Template)_Nov 2021_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/EGPAF_Nov_21 (Retention Template)_FY22 (003)_07 12 2021.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/ICAP_Nov_21 (Retention Template)_FY22_06122021.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_11/FGH_Nov_21 (Retention Template)_FY22.xlsx"
 
 ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_fy22q1.xlsx") %>%
   select(-c(sisma_id,

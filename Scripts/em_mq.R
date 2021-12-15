@@ -157,6 +157,6 @@ mq_final <- mq %>%
   summarize(across(PEDIDO_1A_D:ALTOCV12MESES_2A_N, sum, na.rm = TRUE)) %>% 
   ungroup()
 
-# PRIN TO TO DISK ----------------------------------------------------------
+# PRINT TO TO DISK ----------------------------------------------------------
 
 write.xlsx(mq_final, file = "Dataout/mqvl_test.xlsx", sheetName = "sheet1", append = TRUE, overwrite = TRUE)
