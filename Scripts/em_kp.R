@@ -1,13 +1,13 @@
 #------- Choose Quarter and FY for Custom Indicator Export -----------------------
 
 #SELECT QUARTER
-Q_choose <- "Q4"
+Q_choose <- "Q1"
 
 #SELECT FY
-FY_choose <- 2021
+FY_choose <- 2022
 
 #Select Reporting period
-Current_Reporting_Month <- 12
+Current_Reporting_Month <- 11
 
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
@@ -24,7 +24,7 @@ library(lubridate)
 #Joe's read files
 #setwd("~/")
 
-passos <- read_excel("Data/Passos/PASSOS_FY2022_Tracker_Mensal_Outubro_updated16112022.xlsx",
+passos <- read_excel("Data/Passos/PASSOS_FY2022_Tracker_Mensal_Novembro_10122022.xlsx",
                      sheet = "Dados e Metas PC", skip = 2)
 glimpse(passos) #review data structure
 
@@ -82,7 +82,7 @@ passos_format <- passos  %>%
   glimpse()
 
 passos_check <- passos_format %>% 
-  filter(FY == 2021 & Quarter == "Q4") %>% glimpse()
+  filter(FY == 2022 & Quarter == "Q1") %>% glimpse()
                 
 table(passos_format$date)
 

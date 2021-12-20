@@ -15,7 +15,7 @@ library(scales)
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Oct21.xlsx", 
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Nov21.xlsx", 
                                        sheet = "Jul_Dec2021",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
