@@ -10,12 +10,12 @@ library(openxlsx)
 library(glue)
 library(ggthemes)
 
-# DEFINE PERIODS AND SET PATH - NNEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
+# DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 # 
 
-month <- "01/10/2021" # UPDATE
-monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2021_10.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Oct_2021.xlsx"
+month <- "01/11/2021" # UPDATE
+monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2021_11.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Nov_2021.xlsx"
 
 
 
@@ -31,16 +31,18 @@ prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Oct_
 prep_submission <- read_excel({prep_submission}, sheet = "PrEP_Monthly report", .name_repair = "universal") %>%
   glimpse()
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>%
-  dplyr::select(orgunituid, SNU, Psnu, Sitename) %>%
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+  dplyr::select(orgunituid, SNU, Psnu, Sitename, Lat, Long) %>%
   dplyr::rename(psnu = Psnu,
                 orgunit = Sitename,
-                snu = SNU)
+                snu = SNU,
+                latitude =  Lat,
+                longitude = Long)
 
 historic_files_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
 data_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED IN SPECIFIC CODE TO COMPILE THE ABOVE LIST OF .CSV FILES
 
-historic_dataset <- "Dataout/em_prep.txt"  # PATH AND NAME OF COMPILED PrEP DATASET THAT IS SHARED WITH CDC EVERY MONTH
+historic_dataset <- "Dataout/em_prep.txt"
 
 
 # PROCESS DATASET & CREATE ENHANCED MONITORING DATAFRAME -----------------------------------------------------------------------------------
@@ -116,30 +118,18 @@ historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR
 prep_tidy_history <- historic_files %>%
   map(~ read_csv(file.path(data_path, .))) %>%
   reduce(rbind) %>%
-  dplyr::left_join(ajuda_site_map) %>% 
-  dplyr::rename(Site = `orgunit`) %>% 
+  left_join(ajuda_site_map) %>% 
+  rename(Site = `orgunit`) %>% 
   mutate(date = dmy(date)) %>% 
+  select(-c(snu, psnu, Site)) %>% 
   glimpse()
 
+#-----------------------------------------------------------------------------------
+# PRINT DATAFRAME TO DISK
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# dplyr::filter(value != 0) %>%
-
-
-
-
+write_tsv(
+  prep_tidy_history,
+  {historic_dataset})
 
 
 # GGPLOT VISUALS -----------------------------------------------------------------------------------

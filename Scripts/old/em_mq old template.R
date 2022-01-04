@@ -12,51 +12,17 @@ library(glue)
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
-month <- "2021-12-20" # UPDATE EVERY MONTH
+month <- "2021-10-20" # UPDATE EVERY MONTH
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA_Site_Map_20211206.xlsx"
 
-test_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021.xlsx"
-
-
-
-
-test <- read_excel("Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021a.xlsx", 
-                   sheet = "Monitoria Intensiva de CV", 
-                   skip = 9) %>% 
-  glimpse()
-
-
-
-test2 <- test %>% 
-  pivot_longer('dpi.colheu.pcr_d_total':'mds.cv.supressao_prop_mds', 
-               names_to = c("indicator", "numdenom", "pop_type", "age"), 
-               names_sep = "_", 
-               values_to = "value") %>% 
-  filter(!numdenom == "prop",
-         !pop_type == "total") %>% 
-  mutate(age = recode(age,
-                      "menor2" = "<2",
-                      "0.2" = "0-2",
-                      "0.4" = "0-4",
-                      "5.9" = "5-9",
-                      "10.14" = "10-14",
-                      "0.14" = "0-14",
-                      "1.14" = "1-14",
-                      "2.14" = "2-14"),
-         numdenom = recode(numdenom,
-                           "n" = "N",
-                           "d" = "D"),
-         pop_type = recode(pop_type,
-                           "all" = "All",
-                           "mg" = "MG",
-                           "mds" = "MDS"),
-         indicator = paste0(indicator,
-                            if_else(numdenom %in% c("D"), "_D", ""))) %>% 
-  glimpse()
-
-
-
+dod_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
+fgh_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/FGH_Oct_21 (Retention Template)_FY22_Updated_CS_Namagola_lugea_and CS_Palane.xlsx"
+icap_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/ICAP_Oct_21 (Retention Template)_FY22_05112021.xlsx"
+ariel_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Fundação ARIEL Oct_21 (Retention Template)_FY22.xlsx"
+ccs_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22 (1).xlsx"
+egpaf_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/EGPAF_Oct_21 (Retention Template)_FY22 (003)_11 11 2021.xlsx"
+echo_path <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22_ECHO.xlsx"
 
 # IMPORT AJUDA META DATA --------------------------------------------------
 

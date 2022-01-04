@@ -137,8 +137,6 @@ passos_format_2 <- passos_format %>%
   glimpse()
 
 
-
-
 # Clean up mismatched dates -----------------------------------------------
 passos_format_3 <- passos_format_2 %>%
   mutate(date = if_else(fy==2021 & date=="2020-01-01" & psnu =="Chiure", date + 365, date)) %>% #corrections for mislabeled FY and years
