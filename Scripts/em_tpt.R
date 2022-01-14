@@ -12,18 +12,18 @@ rm(list = ls())
 
 # DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! ------------
 
-month <- "2021-10-20" # UPDATE
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_10.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2021-12-20" # UPDATE
+monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Fundação ARIEL Oct_21 (Retention Template)_FY22.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22 (1).xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/Oct_21 (Retention Template)_FY22_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/EGPAF_Oct_21 (Retention Template)_FY22 (003)_11 11 2021.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/ICAP_Oct_21 (Retention Template)_FY22_05112021.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_10/FGH_Oct_21 (Retention Template)_FY22_Updated_CS_Namagola_lugea_and CS_Palane.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/EGPAF_Monitoria Intensiva_Dec_21_ Template_FY22 12_20_2021_updated (003).xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva_ Template_FY22 12_20_2021_updated10012022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_fy22q1.xlsx") %>%
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
   select(-c(sisma_id,
             `IP FY20`,
             ajuda,
@@ -79,7 +79,11 @@ icap <- tpt_reshape(ICAP, "ICAP")
 
 tpt <- dplyr::bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
+# tpt <- dplyr::bind_rows(ariel, ccs, echo, egpaf, fgh, icap)
+
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
+ 
+# rm(ariel, ccs, echo, egpaf, fgh, icap)
 
 # CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES ---------------------
 

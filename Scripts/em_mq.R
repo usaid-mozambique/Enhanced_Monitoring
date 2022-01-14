@@ -15,9 +15,16 @@ library(glue)
 month <- "2021-12-20" # UPDATE EVERY MONTH
 monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/VL/_CompileHistoric/VL_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA_Site_Map_20211206.xlsx"
+ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
+
+dod <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Dec_2021final 20122021 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
 echo <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
 fgh <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
+icap <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva_ Template_FY22 12_20_2021_updated10012022.xlsx"
+ariel <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
+ccs <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
+egpaf <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/EGPAF_Monitoria Intensiva_Dec_21_ Template_FY22 12_20_2021_updated (003).xlsx"
+
 
 # LOAD DATASETS -----------------------------------------------------------
 
@@ -282,19 +289,24 @@ cv_tidy <- function(filename, ip){
 
 # IMPORT & RESHAPE cv SUBMISSIONS -----------------------------------------------------------
 
+dod <- cv_tidy(dod, "JHPIEGO-DoD")
 echo <- cv_tidy(echo, "ECHO")
 fgh <- cv_tidy(fgh, "FGH")
+ariel <- cv_tidy(ariel, "ARIEL")
+icap <- cv_tidy(icap, "ICAP")
+ccs <- cv_tidy(ccs, "CCS")
+egpaf <- cv_tidy(egpaf, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
-cv_tidy <- dplyr::bind_rows(echo, fgh)
+cv_tidy <- dplyr::bind_rows(echo, fgh, ariel, icap, ccs, egpaf)
 
 cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
   group_by(Partner) %>% 
   distinct(DATIM_code) %>% 
   summarise(n())
 
-rm(echo, fgh)
+rm(echo, fgh, ariel, icap, ccs, egpaf)
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
@@ -319,9 +331,11 @@ cv_compile <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/VL/_CompileHistoric/manual_comp
          district = psnu,
          site = sitename) %>% 
   relocate(month:partner, .after = sisma_id) %>% 
+  pivot_wider(names_from =  indicator, values_from = value) %>% 
   glimpse()
 
 write_tsv(
   cv_compile,
+  na = "",
   "Dataout/em_cv.txt")
 
