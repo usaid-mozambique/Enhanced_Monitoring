@@ -1,6 +1,8 @@
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
 
+rm(list = ls())
+
 library(tidyverse)
 library(lubridate)
 library(glamr)
@@ -13,9 +15,9 @@ library(ggthemes)
 # DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 # 
 
-month <- "01/11/2021" # UPDATE
-monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2021_11.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Nov_2021.xlsx"
+month <- "01/12/2021" # UPDATE
+monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2021_12.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Dec_2021.xlsx"
 
 
 
@@ -99,7 +101,9 @@ em_prep <- em_prep_base %>%
   dplyr::group_by(date, site, orgunituid, district, province, indicator, sex, age, agecoarse, poptype) %>% 
   summarize_at(vars(value), sum, na.rm = TRUE) %>% 
   tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
-  dplyr::left_join(ajuda_site_map)
+  dplyr::left_join(ajuda_site_map) %>% 
+  dplyr::select(-c(latitude, longitude)) %>% 
+  glimpse()
 
 
 #---- WRITE MONTHLY PrEP CSV TO DISK -----------------------

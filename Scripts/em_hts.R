@@ -17,7 +17,7 @@ library(ggthemes)
 #-----------------------------------------------------------------------------------
 # HFR MONTH
 
-month <- "2021-10-01"
+month <- "2021-12-01"
 
 # IMPORT TESTING DATASETS & AJUDA Site Map -----------------------------------------------------------------------------------
 # 
@@ -27,7 +27,7 @@ hts_ci_lig <- read_excel("Data/MISAU/ats_ci_lig_2021.xlsx") ## KEY SISMA SEARCH 
 hts_kp_hist <- read_excel("Data/MISAU/ats_hist_2021.xlsx")  ## KEY SISMA SEARCH WORD(S) "historial", "chave"
 hts_smi <- read_excel("Data/MISAU/ats_smi_2021.xlsx", .name_repair = "universal") ## SAVED SISMA REPORT "ats_smi_misau__new2"
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx")
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx")
 
 # IMPORT HISTORIC COMPILED DATASETS -----------------------------------------------------------------------------------
 # 

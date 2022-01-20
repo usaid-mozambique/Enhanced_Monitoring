@@ -115,7 +115,7 @@ readr::write_csv(
 
 # TEMPORARY WORKAROUND ----------------------------------------------------
 
-temp <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/manual_compile/TPT_2021_03_11.csv")
+temp <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/manual_compile/TPT_2021_03_12.csv")
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 

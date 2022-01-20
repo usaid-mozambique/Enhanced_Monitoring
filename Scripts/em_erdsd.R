@@ -1,6 +1,8 @@
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
 
+rm(list = ls())
+
 library(tidyverse)
 library(glamr)
 library(janitor)
@@ -15,7 +17,7 @@ library(scales)
 # IMPORT ECHO SUBMISSION
 # NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
 
-df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Nov21.xlsx", 
+df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Dez21.xlsx", 
                                        sheet = "Jul_Dec2021",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
@@ -32,7 +34,7 @@ df3 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx",
                   sheet = "Feb_Jul2020",
                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
 
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_fy22q1.xlsx") %>% 
+AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>% 
   dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
 #-------------------------------------------------------------------  ----------------
@@ -56,9 +58,9 @@ df <- df %>% mutate(Date = excel_numeric_to_date(Months, date_system = "modern")
 # PROCESS DATAFRAME AND CALCULATE VARIABLES
 
 df_tidy <- df %>% 
-  tidyr::pivot_wider(names_from = Indicator, values_from = Value, values_fill = NULL) %>% 
-  dplyr::mutate(TX_NET_NEW = TX_CURR - Previous_TX_CURR,
-                ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
+  dplyr::mutate(row_n = row_number()) %>% 
+  tidyr::pivot_wider(names_from = Indicator, values_from = Value, values_fill = 0) %>% 
+  dplyr::mutate(ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
                 ER1Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER1Month),
                 ER1Month_Retained = case_when(!PatientType == "Total" & ER_Status == "Retained" ~ ER1Month),
                 ER1Month_TransferredOut = case_when(!PatientType == "Total" & ER_Status == "TransferredOut" ~ ER1Month),
@@ -78,14 +80,20 @@ df_tidy <- df %>%
                 AgeCoarse = if_else(PatientType %in% c("Pediatrics"), "<15", 
                                     if_else(PatientType %in% c("Adults", "Non-Pregnant Adults", "Pregnant", "Breastfeeding"), "15+", ""))) %>% 
   dplyr::left_join(AJUDA_Site_Map, by = c("Orgunituid" = "orgunituid")) %>% 
-  dplyr::select(-c(SISMA_code, Period, `IP FY20`, Type, ajuda, ajuda_phase, Months, `Source.Name`, HF_Export, province_HF, IMER1, IMER1B, ER1Month, ER4Month, TX_CURR, TX_NEW)) %>% 
+  dplyr::select(-c(SISMA_code, Period, `IP FY20`, Type, ajuda, ajuda_phase, Months, `Source.Name`, HF_Export, province_HF, IMER1, IMER1B, ER1Month, ER4Month, TX_CURR, TX_NEW, row_n)) %>% 
   dplyr::rename(TX_CURR = TX_CURR_2,
                 TX_NEW = TX_NEW_2) %>% 
   dplyr::filter(!PatientType == "Total") %>% 
   dplyr::relocate(Date, .before = 1) %>% 
   dplyr::relocate(sisma_id, Lat, Long, .before = 7) %>% 
   dplyr::relocate(emr, epts, idart, disa, conflict, corridor, ovc, ycm, pmtct_pda, .before = 10) %>% 
-  dplyr::relocate(AgeCoarse, .after = 20)
+  dplyr::relocate(AgeCoarse, .after = 20) %>% 
+  glimpse()
+
+test <- df_tidy %>% 
+  filter(Date == "2021-11-20")
+
+sum(test$TX_NET_NEW, na.rm = T)
 
 #-----------------------------------------------------------------------------------
 # PRINT DATAFRAME TO DISK
