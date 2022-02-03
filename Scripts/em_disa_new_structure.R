@@ -13,21 +13,19 @@ rm(list = ls())
 
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-file_monthly <- "Data/Disa/annual/Relatorio de Carga Viral (October 1, 2020 - September 31, 2021)[85].xlsx"
-period <- "2021 Q4"
-
-#---- DEFINE PATHS AND VALUES - COULD REQUIRE UPDATING EACH MONTH -------------------------------------------------------
-
-final_output <- "Dataout/DISA_annual/disa_fy21.txt"
+file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Dezembro_2021.xlsx"
+file_output <- "Data/Disa_new/monthly_processsed/2021_12.txt"
+period <- "2021-12-20"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_lt.xlsx") %>% 
+disa_datim_map <- read_excel("Documents/disa_datim_map_lt.xlsx") %>%
   select(-c(Notes))
 
 datim_ou_map <- read_excel("Documents/tx_site_reference.xlsx")
 
-xAge <- read_excel({file_monthly}, 
+# DISA BY AGE
+xAge <- read_excel({file_input}, 
                    sheet = "Age & Sex", 
                    col_types = c("text", "text", "text", 
                                  "text", "text", "text", "text", 
@@ -39,9 +37,10 @@ xAge <- read_excel({file_monthly},
   mutate(group = "Age") %>%
   glimpse()
 
-xPW <- read_excel({file_monthly}, 
+# DISA PREGNANT WOMEN
+xPW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Gravidas)",
-                  col_types = c("text", 
+                  col_types = c("text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -54,9 +53,10 @@ xPW <- read_excel({file_monthly},
          DISTRITO = DISTRICT) %>% 
   glimpse
 
-xLW <- read_excel({file_monthly}, 
+# DISA LACTATING WOMEN
+xLW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Lactantes)",
-                  col_types = c("text", 
+                  col_types = c("text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -69,10 +69,9 @@ xLW <- read_excel({file_monthly},
          DISTRITO = DISTRICT) %>% 
   glimpse
 
-#---- NOTE THAT THE TRL TAB OF THE VL REPORT SOMETIMES COMES WITH TWO TABLES AND TOTAL FOR FACILITY LIST.  I ELIMINATE FIRST TABLE AND TAKE TOTAL OUT TO MAKE THE FIRST MUNGE BELOW WORK ------
-
-df_tat <- read_excel({file_monthly}, 
-                     sheet = "TRL", col_types = c("text", 
+# DISA TURN AROUND TIME
+df_tat <- read_excel({file_input}, 
+                     sheet = "TRL", col_types = c("text", "text",
                                                   "text", "text", "text", "numeric", 
                                                   "numeric", "numeric", "numeric", 
                                                   "numeric"), 
@@ -85,7 +84,8 @@ rm(xAge, xPW, xLW)
 
 #---- PROCESS VL DATAFRAME -------------------------------------------------------
 
-df_vl_1 <- df_vl %>% 
+
+df_vl <- df_vl %>% 
   select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
   rename(sisma_id = `SISMA ID`,
          province = PROVINCIA,
@@ -103,11 +103,11 @@ df_vl_1 <- df_vl %>%
                                    grepl(">1000", indicator) ~ ">1000"),
          tat_step = "temp") %>% 
   select(-c(indicator)) %>% 
-  glimpse()
 
+  
 #---- RECODE VL AGE/SEX VALUES -----------------------------------------------
 
-df_vl_2 <- df_vl_1 %>% 
+
   dplyr::mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
                 age = recode(age, "No Age Specified" = "Unknown Age"),
                 age = recode(age, "Não especificada" = "Unknown Age"),
@@ -122,18 +122,21 @@ df_vl_2 <- df_vl_1 %>%
                 sex = recode(sex, "F" = "Female"),
                 sex = recode(sex, "M" = "Male"),
                 sex = replace_na(sex, "Unknown")
-                )
+                ) %>% 
 
+  
 #---- FILTER VL LINES ONLY >0 -----------------------------------------------
 
-df_vl_3 <- df_vl_2 %>% 
+
   filter(value > 0) %>% 
   mutate(indicator = "VL",
          period = {period})
 
+
 #---- PROCESS TAT DATAFRAME -----------------------------------------------
 
-df_tat_1 <- df_tat %>% 
+
+df_tat <- df_tat %>% 
   rename(sisma_id = `SISMA ID`,
          province = PROVINCIA,
          district = DISTRITO,
@@ -147,16 +150,20 @@ df_tat_1 <- df_tat %>%
          indicator = "TAT",
          period = {period})
 
-disa_vl <- bind_rows(df_vl_3, df_tat_1) %>%
-glimpse()
+
+disa_vl <- bind_rows(df_vl, df_tat)
+
 
 # CREATE VLS DATASET ------------------------------------------------------
+
 
 disa_vls <- disa_vl %>% 
   filter(result == "<1000") %>% 
   mutate(indicator = "VLS")
 
+
 #---- UNION VL & VLS DATAFRAMES, PIVOT WIDER AND GROUP ----------------
+
 
 disa <- bind_rows(disa_vl, disa_vls) %>% 
   mutate(row = row_number(),
@@ -169,7 +176,9 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
   ungroup() %>% 
   glimpse()
 
+
 #---- JOIN DISA AJUDA MAP -------------------------------
+
 
 disa_meta <- disa %>% 
   left_join(disa_datim_map) %>% 
@@ -177,7 +186,9 @@ disa_meta <- disa %>%
   rename(disa_id = DISA_ID) %>% 
   relocate(c(ajuda, datim_uid), .before = disa_id)
 
+
 #---- FILTER OUT ROWS WITHOUT DATIM UID AND GROUP DATA -------------------------------
+
 
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
@@ -187,7 +198,7 @@ disa_final <- disa_meta %>%
             TAT = sum(TAT)) %>%
   left_join(datim_ou_map, by = c("datim_uid" = "orgunituid")) %>% 
   mutate(support_type = case_when(
-    clinical_partner == "Sustainability Sites" ~ "MISAU",
+    clinical_partner == "Sustainability Sites" ~ "Sustainability",
     TRUE ~ as.character("AJUDA"))) %>% 
   select(period,
          datim_uid,
@@ -207,11 +218,24 @@ disa_final <- disa_meta %>%
          TAT) %>% 
   glimpse()
 
-sum(disa_final$VL)
+
+# CHECK RESULTS LOST WHEN FILTERING ON DATIM_UID --------------------------
+
+
+disa_missing <- disa_meta %>% 
+  filter(is.na(datim_uid),
+         group == "Age") %>% 
+  group_by(period, province, district, site, disa_id) %>% 
+  summarize(
+    across(c(VL, VLS, TAT), .fns = sum), .groups = "drop"
+  )
+
+sum(disa_final$VL, na.rm = T)
+sum(disa_missing$VL, na.rm = T)
 
 # PRINT OUTPUT TO DISK ------------------------------------------------------
 
 readr::write_tsv(
   disa_final,
-  {final_output},
+  {file_output},
   na ="")
