@@ -12,6 +12,7 @@ rm(list = ls())
 
 # SET PATHS & VALUES -----------------------------------------------------------
 
+
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
 ariel <- "Data/Other/ARIEL_TX_PVLS_FY22Q1_Report Check.xlsx"
@@ -22,7 +23,8 @@ egpaf <- "Data/Other/EGPAF_TX_PVLS_FY22Q1_Report Check (003).xlsx"
 echo <- "Data/Other/ECHO_TX_PVLS_FY22Q1_Report Check.xlsx"
 
 
-# CREATE FUNCTION FOR RESHAPING IP SUBMISSIONS ----------------------------
+# EXTRACT FUNCTION RESHAPE ---------------------------------------------
+
 
 lab_reshape <- function(filename, ip){
   
@@ -214,7 +216,9 @@ lab_reshape <- function(filename, ip){
   
 }
 
+
 # LOAD DATASETS -----------------------------------------------------------
+
 
 ajuda_meta <- read_excel(ajuda_path) %>% 
   select(
@@ -228,12 +232,19 @@ ajuda_meta <- read_excel(ajuda_path) %>%
     clinical_ip = `IP FY20`
   )
 
+
+# PROCESS IP SUBMISSIONS --------------------------------------------------
+
+
 df_ariel <- lab_reshape(ariel, "ARIEL")
 df_fgh <- lab_reshape(fgh, "FGH")
 df_icap <- lab_reshape(icap, "ICAP")
 df_ccs <- lab_reshape(ccs, "CCS")
 df_egpaf <- lab_reshape(egpaf, "EGPAF")
 df_echo <- lab_reshape(echo, "ECHO")
+
+
+# JOIN METADATA -----------------------------------------------------------
 
 
 df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%  
@@ -247,5 +258,5 @@ df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%
 
 readr::write_tsv(
   df,
-  "Dataout/test.txt",
+  "Dataout/adhoc_vl_source.txt",
   na ="")

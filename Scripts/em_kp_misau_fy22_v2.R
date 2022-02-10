@@ -49,8 +49,7 @@ kp_reshape <- function(filename, ip){
     pivot_longer(TX_New_KP_total:`TX_PVLS_Num_6meses_REC&MTS_25+`, 
                  names_to = "temp",
                  values_to = "value") %>% 
-    filter(!str_detect(temp, "otal"),
-           Partner == ip) %>% 
+    filter(Partner == ip) %>% 
     mutate(indicator = case_when(str_detect(temp, "TX_CURR_6meses")  ~ "TX_CURR_6MO",
                                  str_detect(temp, "TX_CURR_meses")  ~ "TX_CURR_6MO",  # CORRECT IN REPORTING TEMPLATE?
                                  str_detect(temp, "TX_New_6meses")  ~ "TX_NEW_6MO",
@@ -64,7 +63,8 @@ kp_reshape <- function(filename, ip){
                                  str_detect(temp, "TX_PVLS_Num")  ~ "TX_PVLS_N",
                                  str_detect(temp, "TX_PVLS_Den")  ~ "TX_PVLS_D"
                                  ),
-    keypop = case_when(str_detect(temp, "_PID_")  ~ "PID",
+    keypop = case_when(str_detect(temp, "otal")  ~ "All (KP & non-KP)",
+                       str_detect(temp, "_PID_")  ~ "PID",
                        str_detect(temp, "_HSH_")  ~ "HSH",
                        str_detect(temp, "_MTS_")  ~ "MTS",
                        str_detect(temp, "_Rec_")  ~ "REC",  # CORRECT IN REPORTING TEMPLATE?
