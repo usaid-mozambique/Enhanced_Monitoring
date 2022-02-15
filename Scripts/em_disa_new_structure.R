@@ -14,7 +14,8 @@ rm(list = ls())
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
 file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Dezembro_2021.xlsx"
-file_output <- "Data/Disa_new/monthly_processsed/2021_12.txt"
+file_output <- "Dataout/DISA/monthly_processed/2021_12.txt"
+file_append <- "Dataout/DISA/em_disa.txt"
 period <- "2021-12-20"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
@@ -234,8 +235,18 @@ sum(disa_final$VL, na.rm = T)
 sum(disa_missing$VL, na.rm = T)
 
 # PRINT OUTPUT TO DISK ------------------------------------------------------
+# WRITE MONTHLY FILE
 
 readr::write_tsv(
   disa_final,
   {file_output},
   na ="")
+
+# APPEND MONTHLY TO HISTORICAL FILE
+readr::write_tsv(
+  disa_final,
+  {file_append},
+  na = "",
+  append = TRUE)
+
+

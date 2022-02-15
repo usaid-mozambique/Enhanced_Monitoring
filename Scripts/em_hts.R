@@ -17,26 +17,31 @@ library(ggthemes)
 #-----------------------------------------------------------------------------------
 # HFR MONTH
 
-month <- "2021-12-01"
+month <- "2022-01-01"
 
 # IMPORT TESTING DATASETS & AJUDA Site Map -----------------------------------------------------------------------------------
 # 
 
-hts_result <- read_excel("Data/MISAU/ats_result_2021.xlsx") ## KEY SISMA SEARCH WORD(S) "ano"
-hts_ci_lig <- read_excel("Data/MISAU/ats_ci_lig_2021.xlsx") ## KEY SISMA SEARCH WORD(S) "indice", "diagno", "ligad"
-hts_kp_hist <- read_excel("Data/MISAU/ats_hist_2021.xlsx")  ## KEY SISMA SEARCH WORD(S) "historial", "chave"
-hts_smi <- read_excel("Data/MISAU/ats_smi_2021.xlsx", .name_repair = "universal") ## SAVED SISMA REPORT "ats_smi_misau__new2"
+hts_result <- read_excel("Data/MISAU/ats_result_2022.xlsx") ## KEY SISMA SEARCH WORD(S) "ano"
+hts_ci_lig <- read_excel("Data/MISAU/ats_ci_lig_2022.xlsx") ## KEY SISMA SEARCH WORD(S) "indice", "diagno", "ligad"
+hts_kp_hist <- read_excel("Data/MISAU/ats_hist_2022.xlsx")  ## KEY SISMA SEARCH WORD(S) "historial", "chave"
+hts_smi <- read_excel("Data/MISAU/ats_smi_2022.xlsx", .name_repair = "universal") ## SAVED SISMA REPORT "ats_smi_misau__new2"
 
 AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx")
 
 # IMPORT HISTORIC COMPILED DATASETS -----------------------------------------------------------------------------------
 # 
 
+
+
 output_em_hts_2019 <- read_csv("Data/MISAU/output_em_hts_2019.csv", 
                                col_types = cols(SubGroup = col_character()))
 
 
 output_em_hts_2020 <- read_csv("Data/MISAU/output_em_hts_2020.csv", 
+                               col_types = cols(SubGroup = col_character()))
+
+output_em_hts_2021 <- read_csv("Data/MISAU/output_em_hts_2021.csv", 
                                col_types = cols(SubGroup = col_character()))
 
 # PROCESS TESTING DATAFRAME -----------------------------------------------------------------------------------
@@ -263,7 +268,7 @@ hts_compile_year <- dplyr::bind_rows(hts_all, hts_ci_lig_all, hts_kp_hist_all, h
 # UNION YEARLY COMPILED DATASETS -----------------------------------------------------------------------------------
 # 
 
-hts_compile_history <- dplyr::bind_rows(output_em_hts_2019, output_em_hts_2020, hts_compile_year)
+hts_compile_history <- dplyr::bind_rows(output_em_hts_2019, output_em_hts_2020, output_em_hts_2021, hts_compile_year)
 
 # GENERATE HFR SUBMISSION -----------------------------------------------------------------------------------
 # 
@@ -322,7 +327,7 @@ readr::write_csv(
 #-----------------------------------------------------------------------------------
 # REMOVE TEMPORARY OBJECTS FROM ENVIRONMENT
 
-remove(list=c("AJUDA_Site_Map", "hfr_hts_pos", "hfr_hts_tst", "hts_all", "hts_ci_lig", "hts_ci_lig_all", "hts_compile_year", "hts_kp_hist", "hts_kp_hist_all", "hts_result", "hts_smi", "hts_smi_all", "hts_smi_pos", "output_em_hts_2019", "output_em_hts_2020"))
+remove(list=c("AJUDA_Site_Map", "hfr_hts_pos", "hfr_hts_tst", "hts_all", "hts_ci_lig", "hts_ci_lig_all", "hts_compile_year", "hts_kp_hist", "hts_kp_hist_all", "hts_result", "hts_smi", "hts_smi_all", "hts_smi_pos", "output_em_hts_2019", "output_em_hts_2020", "output_em_hts_2021"))
 
 
 # TEST SUMS CODE AND PLOT DATA

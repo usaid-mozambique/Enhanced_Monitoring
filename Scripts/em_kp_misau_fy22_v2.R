@@ -12,6 +12,7 @@ rm(list = ls())
 
 # SET PATHS & VALUES -----------------------------------------------------------
 
+period <- "2021-12-20"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
@@ -38,7 +39,7 @@ ajuda_meta <- read_excel(ajuda_path) %>%
     clinical_ip = `IP FY20`
   )
 
-TX_PVLS_Den_meses
+
 # EXTRACT FUNCTION RESHAPE ---------------------------------------------
 
 
@@ -105,8 +106,13 @@ df_echo <- kp_reshape(echo, "ECHO")
 
 df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%  
   left_join(ajuda_meta, by = c("DATIM_code" = "orgunituid")) %>% 
+  mutate(date = {period},
+         population = case_when(keypop == "All (KP & non-KP)" ~ "General",
+                                TRUE ~ "Key Pop"),
+         keypop = case_when(keypop == "All (KP & non-KP)" ~ "",
+                            TRUE ~ keypop)) %>% 
   select(-c(Partner, Province, District, `Health Facility`, temp)) %>% 
-  relocate(clinical_ip, snu, psnu, site, orgunituid = DATIM_code, sisma_id, latitude, longitude, everything()) %>% 
+  relocate(date, clinical_ip, snu, psnu, site, orgunituid = DATIM_code, sisma_id, latitude, longitude, population, everything()) %>% 
   glimpse()
 
 

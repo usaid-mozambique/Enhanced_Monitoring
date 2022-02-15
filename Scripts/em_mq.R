@@ -12,18 +12,20 @@ library(glue)
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
-month <- "2021-12-20" # UPDATE EVERY MONTH
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/VL/_CompileHistoric/VL_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-01-20" # UPDATE EVERY MONTH
+monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_01.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+historical_dataset <- "Dataout/MQ_CV/CV_compile.txt"
+output_dataset <- "em_cv.txt"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
-dod <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Dec_2021final 20122021 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
-echo <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
-fgh <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
-icap <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva_ Template_FY22 12_20_2021_updated10012022.xlsx"
-ariel <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
-ccs <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
-egpaf <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/EGPAF_Monitoria Intensiva_Dec_21_ Template_FY22 12_20_2021_updated (003).xlsx"
+dod <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/DOD__Jan_2022final 20012022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
+echo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/Monitoria Intensiva_ Template_JANEIRO_2022_ECHO.xlsx"
+fgh <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/FGH_JAN_22_Monitoria Intensiva Template FY22_122021_Updated_ February 14_2022 (1).xlsx"
+icap <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/ICAP_Janeiro2022_Monitoria Intensiva_ Template_FY22 12_20_2021_updated09022022.xlsx"
+ariel <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_January22.xlsx"
+ccs <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/NON MER Indicators Template_FY22 01_20_2022 CCS.xlsx"
+egpaf <- "Data/Ajuda/ER_DSD_TPT_VL/2022_01/EGPAF_Monitoria Intensiva_ Template_FY22 20_Jan_2022_updated (003)_07 02 2021.xlsx"
 
 
 # LOAD DATASETS -----------------------------------------------------------
@@ -283,7 +285,8 @@ cv_tidy <- function(filename, ip){
            indicator = paste0(indicator,
                               if_else(numdenom %in% c("D"), "_D", "")),
            month ={month}) %>% 
-    filter(Partner == ip)
+    filter(Partner == ip) %>% 
+    select(-c(Data))
   
 }
 
@@ -310,16 +313,27 @@ rm(echo, fgh, ariel, icap, ccs, egpaf)
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
-readr::write_csv(
+readr::write_tsv(
   cv_tidy,
+  na = "",
   {monthly_dataset})
+
+# APPEND MONTHLY TO HISTORICAL FILE
+readr::write_tsv(
+  cv_tidy,
+  na = "",
+  append = TRUE,
+  {historical_dataset})
+
 
 # TEMPORARY WORKAROUND ----------------------------------------------------
 
-cv_compile <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/VL/_CompileHistoric/manual_compile/VL_2021_12_12.csv") %>% 
+
+cv_compile <- read_delim({historical_dataset}, 
+                         delim = "\t", escape_double = FALSE, 
+                         trim_ws = TRUE) %>%
   select(-c(No,
             Type,
-            Data,
             Partner,
             Province,
             District, 
