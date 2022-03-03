@@ -11,279 +11,247 @@ library(openxlsx)
 
 rm(list = ls())
 
-#---- DEFINE PATHS AND VALUES - REQUIREs UPDATING EACH MONTH! -------------------------------------------------------
+#---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-file_monthly <- "Data/Disa/monthly/HIV VL September 2021 Data.xlsx"
-month <- "2021-09-20"
-month_output <- "Data/Disa/monthly_processsed/2021_09.tsv"
-
-#---- DEFINE PATHS AND VALUES - DO NOT REQUIRE UPDATING EACH MONTH -------------------------------------------------------
-
-historic_files_path <- "Data/Disa/monthly_processsed/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
-compile_path <- "Data/Disa/monthly_processsed/"
-final_output <- "Dataout/disa.txt"
-final_ajuda_output <- "Dataout/disa_ajuda.txt"
-final_misau_output <- "Dataout/disa_misau.txt"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral_Janeiro_2022.xlsx"
+file_output <- "Dataout/DISA/monthly_processed/2022_01.txt"
+file_append <- "Dataout/em_disa.txt"
+period <- "2022-01-20"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-xAge <- read_excel({file_monthly}, 
-                   sheet = "S. Viral (Idade)", skip = 2)
+disa_datim_map <- read_excel("Documents/disa_datim_map_FEB182022.xlsx") %>%
+  select(-c(Notes))
 
-xAge <- read_excel({file_monthly},
-                   sheet = "S. Viral (Idade)", 
+datim_ou_map <- read_excel("Documents/tx_site_reference.xlsx")
+
+# DISA BY AGE
+xAge <- read_excel({file_input}, 
+                   sheet = "Age & Sex", 
                    col_types = c("text", "text", "text", 
-                                 "text", "text", "numeric", "numeric", 
+                                 "text", "text", "text", "text", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric"), 
+                                 "numeric", "numeric", "numeric",
+                                 "numeric", "numeric"), 
                    skip = 2) %>% 
-  dplyr::mutate(group = "Age") %>%
+  mutate(group = "Age") %>%
   glimpse()
 
-xSex <- read_excel({file_monthly}, 
-                   sheet = "S. Viral (Genero)",
-                   col_types = c("text", "text", "text", 
-                                 "text", "text", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric"), 
-                   skip = 2) %>% 
-  dplyr::mutate(group = "Sex") %>% 
-  glimpse
-
-xPW <- read_excel({file_monthly}, 
+# DISA PREGNANT WOMEN
+xPW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Gravidas)",
-                  col_types = c("text", 
+                  col_types = c("text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric"), 
                   skip = 2) %>% 
-  dplyr::mutate(group = "PW") %>% 
-  dplyr::rename(US = HF,
-                PROVINCIA = PROVINCE,
-                DISTRITO = DISTRICT) %>% 
+  mutate(group = "PW") %>% 
+  rename(US = HF,
+         PROVINCIA = PROVINCE,
+         DISTRITO = DISTRICT) %>% 
   glimpse
 
-xLW <- read_excel({file_monthly}, 
+# DISA LACTATING WOMEN
+xLW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Lactantes)",
-                  col_types = c("text", 
+                  col_types = c("text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric"),
                   skip = 2) %>% 
-  dplyr::mutate(group = "LW") %>%
-  dplyr::rename(US = HF,
-                PROVINCIA = PROVINCE,
-                DISTRITO = DISTRICT) %>% 
+  mutate(group = "LW") %>%
+  rename(US = HF,
+         PROVINCIA = PROVINCE,
+         DISTRITO = DISTRICT) %>% 
   glimpse
 
-#---- NOTE THAT THE TRL TAB OF THE VL REPORT SOMETIMES COMES WITH TWO TABLES AND TOTAL FOR FACILITY LIST.  I ELIMINATE FIRST TABLE AND TAKE TOTAL OUT TO MAKE THE FIRST MUNGE BELOW WORK ------
-
-df_tat <- read_excel({file_monthly}, 
-                     sheet = "TRL", col_types = c("text", 
+# DISA TURN AROUND TIME
+df_tat <- read_excel({file_input}, 
+                     sheet = "TRL", col_types = c("text", "text",
                                                   "text", "text", "text", "numeric", 
                                                   "numeric", "numeric", "numeric", 
                                                   "numeric"), 
                      skip = 2) %>% 
   select(-c(TOTAL))
 
-df_vl <- dplyr::bind_rows(xAge, xSex, xPW, xLW)
+df_vl <- bind_rows(xAge, xPW, xLW)
 
-rm(xAge, xSex, xPW, xLW)
-
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA_Site_Map_20211206.xlsx")
-disa_site_map <- read_excel("~/GitHub/_GeneralJoins/DISA Datim Mapping.xlsx")
+rm(xAge, xPW, xLW)
 
 #---- PROCESS VL DATAFRAME -------------------------------------------------------
 
-df_vl_1 <- df_vl %>% 
-  dplyr::select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
-  dplyr::rename(sisma_id = `SISMA ID`,
-                province = PROVINCIA,
-                district = DISTRITO,
-                site = US,
-                age = Idade,
-                sex = Genero) %>% 
-  tidyr::pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
-  dplyr::mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
-                                          grepl("Fal", indicator) ~ "Theraputic Failure",
-                                          grepl("Repetir", indicator) ~ "Post Breastfeeding",
-                                          grepl("Motivo de Teste n", indicator) ~ "Not Specified"),
-                result = dplyr::case_when(grepl("<1000", indicator) ~ "<1000",
-                                          grepl(">1000", indicator) ~ ">1000"),
-                tat_step = "temp") %>% 
-  dplyr::select(-c(indicator)) %>% 
-  glimpse()
 
+df_vl <- df_vl %>% 
+  select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
+  rename(sisma_id = `SISMA ID`,
+         province = PROVINCIA,
+         district = DISTRITO,
+         site = US,
+         age = Age,
+         sex = Sex) %>% 
+  relocate(c(group), .before = site) %>% 
+  pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
+  mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
+                                   grepl("Fal", indicator) ~ "Theraputic Failure",
+                                   grepl("Repetir", indicator) ~ "Post Breastfeeding",
+                                   grepl("Motivo de Teste NS", indicator) ~ "Not Specified"),
+         result = dplyr::case_when(grepl("<1000", indicator) ~ "<1000",
+                                   grepl(">1000", indicator) ~ ">1000"),
+         tat_step = "temp") %>% 
+  select(-c(indicator)) %>% 
+
+  
 #---- RECODE VL AGE/SEX VALUES -----------------------------------------------
 
-df_vl_2 <- df_vl_1 %>% 
-  dplyr::mutate(age = dplyr::recode(age, "Idade não especificada" = "Unknown"),
-                age = dplyr::recode(age, "No Age Specified" = "Unknown"),
-                age = dplyr::recode(age, "Não especificada" = "Unknown"),
-                age = tidyr::replace_na(age, "Unknown"),
-                
-                sex = dplyr::recode(sex, "UNKNOWN" = "Unknown"),
-                sex = dplyr::recode(sex, "Not Specified" = "Unknown"),
-                sex = dplyr::recode(sex, "Não especificado" = "Unknown"),
-                sex = dplyr::recode(sex, "F" = "Female"),
-                sex = dplyr::recode(sex, "M" = "Male"),
-                sex = tidyr::replace_na(sex, "Unknown"))
 
+  dplyr::mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
+                age = recode(age, "No Age Specified" = "Unknown Age"),
+                age = recode(age, "Não especificada" = "Unknown Age"),
+                age = recode(age, "NS" = "Unknown Age"),
+                age = recode(age, "<1" = "<01"),
+                age = replace_na(age, "Unknown Age"),
+                
+                
+                sex = recode(sex, "UNKNOWN" = "Unknown"),
+                sex = recode(sex, "Not Specified" = "Unknown"),
+                sex = recode(sex, "Não especificado" = "Unknown"),
+                sex = recode(sex, "F" = "Female"),
+                sex = recode(sex, "M" = "Male"),
+                sex = replace_na(sex, "Unknown")
+                ) %>% 
+
+  
 #---- FILTER VL LINES ONLY >0 -----------------------------------------------
 
-df_vl_3 <- df_vl_2 %>% 
-  dplyr::filter(value > 0) %>% 
-  dplyr::mutate(indicator = "VL",
-                month = {month})
+
+  filter(value > 0) %>% 
+  mutate(indicator = "VL",
+         period = {period})
+
 
 #---- PROCESS TAT DATAFRAME -----------------------------------------------
 
-df_tat_1 <- df_tat %>% 
-  dplyr::rename(sisma_id = `SISMA ID`,
-                province = PROVINCIA,
-                district = DISTRITO,
-                site = US) %>% 
-  tidyr::pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
-  dplyr::mutate(tat_step = dplyr::recode(tat_step, 
-                                         "COLHEITA À RECEPÇÃO" = "S1: Collection to Receipt",
-                                         "RECEPÇÃO AO REGISTO" = "S2: Receipt to Registration",
-                                         "REGISTO À ANÁLISE" = "S3: Registration to Analysis",
-                                         "ANÁLISE À VALIDAÇÃO" = "S4: Analysis to Validation"),
-                indicator = "TAT",
-                month = {month})
 
-df_final <- dplyr::bind_rows(df_vl_3, df_tat_1)
-
-
-#------ WRITE MONTHLY FILE TO DISK -------------------------------------------
-
-readr::write_tsv(
-  df_final,
-  {month_output},
-  na ="")
-
-rm(df_final, df_tat, df_tat_1, df_vl, df_vl_1, df_vl_2, df_vl_3)
+df_tat <- df_tat %>% 
+  rename(sisma_id = `SISMA ID`,
+         province = PROVINCIA,
+         district = DISTRITO,
+         site = US) %>% 
+  pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
+  mutate(tat_step = recode(tat_step, 
+                           "COLHEITA À RECEPÇÃO" = "S1: Collection to Receipt",
+                           "RECEPÇÃO AO REGISTO" = "S2: Receipt to Registration",
+                           "REGISTO À ANÁLISE" = "S3: Registration to Analysis",
+                           "ANÁLISE À VALIDAÇÃO" = "S4: Analysis to Validation"),
+         indicator = "TAT",
+         period = {period})
 
 
-#---- DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED TO CREATE HISTORIC DATASET ---------------------------------
+disa_vl <- bind_rows(df_vl, df_tat)
 
-historic_files <- dir({historic_files_path}, pattern = "*.tsv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
-#---- ROW BIND ALL MONTHS -----------------------
+# CREATE VLS DATASET ------------------------------------------------------
 
-disa_vl <- historic_files %>%
-  map(~ read_tsv(file.path(compile_path, .))) %>% 
-  reduce(rbind) %>% 
-  glimpse()
-
-#---- SUBSET VLS DATASET AND MAKE INDEPENDENT INDICATOR -------------
 
 disa_vls <- disa_vl %>% 
-  dplyr::filter(result == "<1000") %>% 
-  dplyr::mutate(indicator = "VLS")
+  filter(result == "<1000") %>% 
+  mutate(indicator = "VLS")
+
 
 #---- UNION VL & VLS DATAFRAMES, PIVOT WIDER AND GROUP ----------------
 
-disa <- dplyr::bind_rows(disa_vl, disa_vls) %>% 
-  dplyr::mutate(row = row_number(),
-                tat_step = na_if(tat_step, "temp")) %>% 
-  tidyr::pivot_wider(names_from = indicator, values_from = value, values_fill = NULL) %>% 
-  dplyr::group_by(month, province, district, site, sisma_id, age, group, sex, motive, tat_step) %>%
+
+disa <- bind_rows(disa_vl, disa_vls) %>% 
+  mutate(row = row_number(),
+         tat_step = na_if(tat_step, "temp")) %>% 
+  pivot_wider(names_from = indicator, values_from = value, values_fill = NULL) %>% 
+  group_by(period, province, district, site, DISA_ID, sisma_id, age, group, sex, motive, tat_step) %>%
   summarise(VL = sum(VL, na.rm = T),
             VLS = sum(VLS, na.rm = T),
             TAT = sum(TAT, na.rm = T)) %>%
   ungroup() %>% 
   glimpse()
 
-#---- CREATE AJUDA SUBSET OF DISA DATA -------------------------------
 
-disa_ajuda <- disa %>% 
-  dplyr::left_join(disa_site_map, c("site" = "disa_site")) %>% 
-  dplyr::left_join(ajuda_site_map, c("orgunituid" = "orgunituid")) %>% 
-  tidyr::drop_na(orgunituid) %>% 
-  dplyr::select(-c(SNU,
-                   Psnu,
-                   Sitename,
-                   sisma_id.x,
-                   sisma_id.y)) %>% 
-  dplyr::rename(partner = `IP FY20`,
-                lat = Lat,
-                long = Long) %>% 
-  dplyr::relocate(c(orgunituid, lat, long, partner), .after = site)
+#---- JOIN DISA AJUDA MAP -------------------------------
 
-#---- CREATE MISAU DISA DATA -------------------------------
 
-disa_misau <- disa %>%
-  dplyr::rename(periodo = month,
-                provincia = province,
-                distrito = district,
-                us = site,
-                idade = age,
-                grupo = group,
-                sexo = sex,
-                motivo = motive,
-                trl_etapa = tat_step,
-                CV = VL,
-                CVS = VLS,
-                TRL = TAT) %>% 
-  dplyr::mutate(grupo = dplyr::recode(grupo, "Age" = "Idade"),
-                grupo = dplyr::recode(grupo, "Sex" = "Sexo"),
-                grupo = dplyr::recode(grupo, "PW" = "MG"),
-                grupo = dplyr::recode(grupo, "LW" = "ML"),
-                
-                sexo = dplyr::recode(sexo, "Male" = "Masculino"),
-                sexo = dplyr::recode(sexo, "Female" = "Feminino"),
-                sexo = dplyr::recode(sexo, "Unknown" = "Desconhecido"),
-                
-                motivo = dplyr::recode(motivo, "Routine" = "Rotineiro"),
-                motivo = dplyr::recode(motivo, "Theraputic Failure" = "Falência Terapêutica"),
-                motivo = dplyr::recode(motivo, "Post Breastfeeding" = "Pós-amamentação"),
-                motivo = dplyr::recode(motivo, "Not Specified" = "Desconhecido"),
-                
-                trl_etapa = dplyr::recode(trl_etapa, "S1: Collection to Receipt" = "E1: Colheita a Chegada"),
-                trl_etapa = dplyr::recode(trl_etapa, "S2: Receipt to Registration" = "E2: Chegada a Registo"),
-                trl_etapa = dplyr::recode(trl_etapa, "S3: Registration to Analysis" = "E3: Registo a Analise"),
-                trl_etapa = dplyr::recode(trl_etapa, "S4: Analysis to Validation" = "E4: Analise a Validacao"))
-                                 
-rm(ajuda_site_map, disa_site_map, disa_vl, disa_vls)
+disa_meta <- disa %>% 
+  left_join(disa_datim_map) %>% 
+  mutate(ajuda = replace_na(ajuda, 0)) %>% 
+  rename(disa_id = DISA_ID) %>% 
+  relocate(c(ajuda, datim_uid), .before = disa_id)
 
-#------ WRITE FILE TO DISK -------------------------------------------
+
+#---- FILTER OUT ROWS WITHOUT DATIM UID AND GROUP DATA -------------------------------
+
+
+disa_final <- disa_meta %>% 
+  drop_na(datim_uid) %>%
+  group_by(period, datim_uid, age, group, sex, motive, tat_step) %>% 
+  summarise(VL = sum(VL),
+            VLS = sum(VLS),
+            TAT = sum(TAT)) %>%
+  left_join(datim_ou_map, by = c("datim_uid" = "orgunituid")) %>% 
+  mutate(support_type = case_when(
+    clinical_partner == "MISAU" ~ "Sustainability",
+    TRUE ~ as.character("AJUDA"))) %>% 
+  select(period,
+         datim_uid,
+         snu1,
+         psnu,
+         sitename,
+         support_type,
+         partner = clinical_partner,
+         agency = clinical_funding_agency,
+         age,
+         group,
+         sex,
+         motive,
+         tat_step,
+         VL,
+         VLS,
+         TAT) %>% 
+  glimpse()
+
+
+# CHECK RESULTS LOST WHEN FILTERING ON DATIM_UID --------------------------
+
+
+disa_missing <- disa_meta %>% 
+  filter(is.na(datim_uid),
+         group == "Age") %>% 
+  group_by(period, province, district, site, disa_id) %>% 
+  summarize(
+    across(c(VL, VLS, TAT), .fns = sum), .groups = "drop"
+  )
+
+sum(disa_final$VL, na.rm = T)
+sum(disa_missing$VL, na.rm = T)
+
+# PRINT OUTPUT TO DISK ------------------------------------------------------
+# WRITE MONTHLY FILE
 
 readr::write_tsv(
-  disa,
-  {final_output},
+  disa_final,
+  {file_output},
   na ="")
 
+write.xlsx(disa_missing,
+           {"Dataout/DISA/missing_sites_mfl_jan22.xlsx"})
+
+
+
+# APPEND MONTHLY TO HISTORICAL FILE
 readr::write_tsv(
-  disa_ajuda,
-  {final_ajuda_output},
-  na ="")
-
-readr::write_tsv(
-  disa_misau,
-  {final_misau_output},
-  na = "")
-
-
-
-
-
-
-# readr::write_tsv(
-#   disa_misau,
-#   {final_misau_output},
-#   na ="")
-
-
-
-
-
-
+  disa_final,
+  {file_append},
+  na = "",
+  append = TRUE)
 
 
