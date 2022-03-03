@@ -1,7 +1,9 @@
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
 
+
 library(tidyverse)
+library(lubridate)
 library(glamr)
 library(janitor)
 library(readxl)
@@ -10,12 +12,14 @@ library(glue)
 
 rm(list = ls())
 
+
 # DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! ------------
 
-month <- "2021-12-20" # UPDATE
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/TPT_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Oct_2021final 23102021 DOD Jhpiego Included Monitoria Intensiva de CV tab (1).xlsx"
+month <- "2021-12-20" # UPDATE
+monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Dec_2021final 20122021 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
 ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
@@ -24,48 +28,56 @@ ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
 
 ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
-  select(-c(sisma_id,
-            `IP FY20`,
-            ajuda,
-            ajuda_phase,
-            epts_date,
-            idart_date)) %>%
-  dplyr::mutate(conflict = replace_na(conflict, 0),
-                corridor = replace_na(corridor, 0))
+  select(sisma_uid = sisma_id,
+         datim_uid =  orgunituid,
+         site_nid,
+         partner = `IP FY20`,
+         snu = SNU,
+         psnu = Psnu,
+         sitename = Sitename,
+         his_epts = epts,
+         his_emr = emr,
+         his_idart = idart,
+         his_disa = disa,
+         support_ovc = ovc,
+         support_ycm = ycm,
+         ovc,
+         ycm,
+         latitude = Lat,
+         longitude = Long)
 
-# DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING ------------------
-
-historic_files_path <- "Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/"  # PATH USED TO CREATE A LIST AND COMPILE ALL .CSV FILES PREVIOUSLY CREATED
-
-historic_dataset <- ("Dataout/em_tpt.txt")  # PATH AND NAME OF COMPILED INTER-AGENCY DATASET THAT IS SHARED WITH CDC EVERY MONTH
 
 # CREATE FUNCTION TPT RESHAPE ---------------------------------------------
 
+
 tpt_reshape <- function(filename, ip){
   
-  df <- read_excel(filename, sheet = "TB", skip = 7) %>%
-    dplyr::select(c(No,
-                    Partner,
-                    Province,
-                    District,
-                    `Health Facility`,
-                    DATIM_code,
-                    SISMA_code,
-                    Type,
-                    Period,
-                    TX_CURR,
-                    TX_CURR_TPT_Com,
-                    TX_CURR_TPT_Not_Comp,
-                    TX_CURR_TB_tto,
-                    TX_CURR_TPT_Not_Comp_POS_Screen,
-                    TX_CURR_Eleg_TPT_Comp,
-                    TX_CURR_W_TPT_last7Mo,
-                    TX_CURR_Eleg_TPT_Init)) %>%
+  df <- read_excel(filename, sheet = "TB", 
+                   skip = 7) %>%
+    select(c(No,
+             Partner,
+             Province,
+             District,
+             `Health Facility`,
+             DATIM_code,
+             SISMA_code,
+             Type,
+             Period,
+             TX_CURR,
+             TX_CURR_TPT_Com,
+             TX_CURR_TPT_Not_Comp,
+             TX_CURR_TB_tto,
+             TX_CURR_TPT_Not_Comp_POS_Screen,
+             TX_CURR_Eleg_TPT_Comp,
+             TX_CURR_W_TPT_last7Mo,
+             TX_CURR_Eleg_TPT_Init)) %>%
     filter(Partner == ip)
   
 }
 
+
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
+
 
 dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
 echo <- tpt_reshape(ECHO, "ECHO")
@@ -75,58 +87,90 @@ egpaf <- tpt_reshape(EGPAF, "EGPAF")
 fgh <- tpt_reshape(FGH, "FGH")
 icap <- tpt_reshape(ICAP, "ICAP")
 
+
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
-tpt <- dplyr::bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
-# tpt <- dplyr::bind_rows(ariel, ccs, echo, egpaf, fgh, icap)
+tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
- 
-# rm(ariel, ccs, echo, egpaf, fgh, icap)
+
 
 # CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES ---------------------
 
+
 tpt_tidy <- tpt %>%
-  dplyr::mutate(TPT_candidates = TX_CURR - (TX_CURR_TPT_Com + TX_CURR_W_TPT_last7Mo) - (TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen),
-                TPT_ineligible = TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen,
-                TPT_active_complete = TX_CURR_W_TPT_last7Mo + TX_CURR_TPT_Com) %>%
-  tidyr::pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
-  dplyr::mutate(indicator = attribute) %>%
-  dplyr::mutate(indicator = dplyr::recode(indicator,
-                                          "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
-                                          "TX_CURR_TB_tto" = "Recent Active TB TX",
-                                          "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
-                                          "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
-                                          "TPT_candidates" = "TPT Candidates",
-                                          "TPT_ineligible" = "TPT Ineligible",
-                                          "TX_CURR_TPT_Not_Comp" = "TPT Not Comp",
-                                          "TPT_active_complete" = "TPT Completed/Active"),
-                Period = {month}
+  mutate(TPT_candidates = TX_CURR - (TX_CURR_TPT_Com + TX_CURR_W_TPT_last7Mo) - (TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen),
+         TPT_ineligible = TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen,
+         TPT_active_complete = TX_CURR_W_TPT_last7Mo + TX_CURR_TPT_Com) %>%
+  pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
+  mutate(indicator = attribute) %>%
+  mutate(indicator = dplyr::recode(indicator,
+                                   "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
+                                   "TX_CURR_TB_tto" = "Recent Active TB TX",
+                                   "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
+                                   "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
+                                   "TPT_candidates" = "TPT Candidates",
+                                   "TPT_ineligible" = "TPT Ineligible",
+                                   "TX_CURR_TPT_Not_Comp" = "TPT Not Comp",
+                                   "TPT_active_complete" = "TPT Completed/Active"),
+         Period = {month}
   ) %>%
-  dplyr::filter(!indicator %in% c("TX_CURR_Eleg_TPT_Init", "TX_CURR_Eleg_TPT_Comp")) %>%
-  dplyr::select(-c(No))
+  filter(!indicator %in% c("TX_CURR_Eleg_TPT_Init", "TX_CURR_Eleg_TPT_Comp")) %>%
+  select(-c(No))
+
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
+
 
 readr::write_csv(
   tpt_tidy,
   {monthly_dataset})
 
+
 # TEMPORARY WORKAROUND ----------------------------------------------------
 
-temp <- read_csv("Data/Ajuda/ER_DSD_TPT_VL/TPT/_CompileHistoric/manual_compile/TPT_2021_03_12.csv")
+
+temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_01_vc.csv")
+
+
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+
+volumn_period <- temp %>% 
+  mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
+  select(DATIM_code, date, indicator, value) %>% 
+  filter(date == max(date),
+         indicator == "TX_CURR") %>% 
+  mutate(site_volume = case_when(
+    value < 1000 ~ "Low",
+    between(value, 1000, 5000) ~ "Medium",
+    value > 5000 ~ "High",
+    TRUE ~ "Not Reported")) %>% 
+  select(DATIM_code, site_volume) %>% 
+  glimpse()
+
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
 tpt_tidy_history <- temp %>%
-  dplyr::left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>% 
-  dplyr::select(-c(Province, District, `Health Facility`)) %>% 
-  dplyr::rename(orgunituid = DATIM_code,
-                Province = SNU,
-                District = Psnu,
-                Site = Sitename) %>% 
-  dplyr::relocate(Province:Site, .after = Partner)
+  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
+  left_join(volumn_period) %>% 
+  select(datim_uid = DATIM_code,
+         sisma_uid,
+         site_nid,
+         period = Period,
+         partner,
+         snu,
+         psnu,
+         sitename,
+         site_volume,
+         ends_with("tude"),
+         starts_with("support"),
+         starts_with("his"),
+         indicator,
+         attribute,
+         value) %>% 
+  glimpse()
 
 readr::write_tsv(
   tpt_tidy_history,
@@ -139,35 +183,6 @@ readr::write_tsv(
 
 
 
-
-
-
-
-
-
-
-
-# SURVEY ALL MONTHLY TPT DATASETS AND REDUCE --------------------------
-
-historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-tpt_tidy_history <- historic_files %>%
-  map(~ read_csv(file.path(historic_files_path, .),
-                 col_types = cols(Period = col_date(format = "%Y-%m-%d")))) %>%
-  reduce(rbind) %>%
-  dplyr::left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>%
-  dplyr::select(-c(Province, District, `Health Facility`)) %>%
-  dplyr::rename(orgunituid = DATIM_code,
-                Province = SNU,
-                District = Psnu,
-                Site = Sitename) %>%
-  dplyr::relocate(Province:Site, .after = Partner)
-
-# WRITE TPT CSV TO DISK ---------------------------------------------------
-
-readr::write_tsv(
-  tpt_tidy_history,
-  {historic_dataset})
 
 
 

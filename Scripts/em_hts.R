@@ -33,7 +33,6 @@ AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
 # 
 
 
-
 output_em_hts_2019 <- read_csv("Data/MISAU/output_em_hts_2019.csv", 
                                col_types = cols(SubGroup = col_character()))
 
@@ -46,6 +45,7 @@ output_em_hts_2021 <- read_csv("Data/MISAU/output_em_hts_2021.csv",
 
 # PROCESS TESTING DATAFRAME -----------------------------------------------------------------------------------
 # 
+
 
 hts_all <- hts_result %>% 
   dplyr::select(-c(periodname,
@@ -95,6 +95,7 @@ hts_all <- hts_result %>%
 
 # PROCESS CASE INDEX AND LINKAGE DATAFRAME -----------------------------------------------------------------------------------
 # 
+
 
 hts_ci_lig_all <- hts_ci_lig %>% 
   dplyr::select(-c(periodname,

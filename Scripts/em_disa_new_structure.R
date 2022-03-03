@@ -13,14 +13,14 @@ rm(list = ls())
 
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Dezembro_2021.xlsx"
-file_output <- "Dataout/DISA/monthly_processed/2021_12.txt"
-file_append <- "Dataout/DISA/em_disa.txt"
-period <- "2021-12-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral_Janeiro_2022.xlsx"
+file_output <- "Dataout/DISA/monthly_processed/2022_01.txt"
+file_append <- "Dataout/em_disa.txt"
+period <- "2022-01-20"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_lt.xlsx") %>%
+disa_datim_map <- read_excel("Documents/disa_datim_map_FEB182022.xlsx") %>%
   select(-c(Notes))
 
 datim_ou_map <- read_excel("Documents/tx_site_reference.xlsx")
@@ -199,7 +199,7 @@ disa_final <- disa_meta %>%
             TAT = sum(TAT)) %>%
   left_join(datim_ou_map, by = c("datim_uid" = "orgunituid")) %>% 
   mutate(support_type = case_when(
-    clinical_partner == "Sustainability Sites" ~ "Sustainability",
+    clinical_partner == "MISAU" ~ "Sustainability",
     TRUE ~ as.character("AJUDA"))) %>% 
   select(period,
          datim_uid,
@@ -241,6 +241,11 @@ readr::write_tsv(
   disa_final,
   {file_output},
   na ="")
+
+write.xlsx(disa_missing,
+           {"Dataout/DISA/missing_sites_mfl_jan22.xlsx"})
+
+
 
 # APPEND MONTHLY TO HISTORICAL FILE
 readr::write_tsv(

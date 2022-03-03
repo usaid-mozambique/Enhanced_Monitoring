@@ -1,3 +1,6 @@
+
+rm(list = ls())
+
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
 
@@ -8,10 +11,9 @@ library(readxl)
 library(openxlsx)
 library(filenamer)
 
-rm(list = ls())
-
 # SET PATHS & VALUES -----------------------------------------------------------
 
+period_value <- "2022-12-20"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
@@ -114,7 +116,8 @@ lab_reshape <- function(filename, ip){
              (group %in% c("M", "F")) ~ "Age/Sex",
              (group %in% c("Lac", "MG")) ~ "Pregnant/Breastfeeding",
              TRUE ~ "KeyPop"),
-           source = "Clinical Module"
+           source = "Clinical Module",
+           period = period_value
     ) %>% 
     select(-c(group)) %>% 
     pivot_wider(names_from = indicator, values_from = value)
@@ -207,7 +210,8 @@ lab_reshape <- function(filename, ip){
              (group %in% c("M", "F")) ~ "Age/Sex",
              (group %in% c("Lac", "MG")) ~ "Pregnant/Breastfeeding",
              TRUE ~ "KeyPop"),
-           source = "Lab Module"
+           source = "Lab Module",
+           period = period_value
     ) %>% 
     select(-c(group)) %>% 
     pivot_wider(names_from = indicator, values_from = value)
@@ -217,20 +221,28 @@ lab_reshape <- function(filename, ip){
 }
 
 
-# LOAD DATASETS -----------------------------------------------------------
+# LOAD METADATA -----------------------------------------------------------
 
 
 ajuda_meta <- read_excel(ajuda_path) %>% 
-  select(
-    snu = SNU,
-    psnu = Psnu,
-    site = Sitename,
-    orgunituid,
-    sisma_id,
-    latitude = Lat,
-    longitude = Long,
-    clinical_ip = `IP FY20`
-  )
+  select(sisma_uid = sisma_id,
+         datim_uid =  orgunituid,
+         site_nid,
+         partner = `IP FY20`,
+         snu = SNU,
+         psnu = Psnu,
+         sitename = Sitename,
+         his_epts = epts,
+         his_emr = emr,
+         his_idart = idart,
+         his_disa = disa,
+         support_ovc = ovc,
+         support_ycm = ycm,
+         ovc,
+         ycm,
+         latitude = Lat,
+         longitude = Long)
+
 
 
 # PROCESS IP SUBMISSIONS --------------------------------------------------
@@ -248,9 +260,25 @@ df_echo <- lab_reshape(echo, "ECHO")
 
 
 df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%  
-  left_join(ajuda_meta, by = c("DATIM_code" = "orgunituid")) %>% 
+  left_join(ajuda_meta, by = c("DATIM_code" = "datim_uid")) %>% 
   select(-c(Partner, Province, District, `Health Facility`)) %>% 
-  relocate(clinical_ip, snu, psnu, site, orgunituid = DATIM_code, sisma_id, latitude, longitude, standarddisag, source, motive, sex, age) %>% 
+  select(datim_uid = DATIM_code,
+         sisma_uid,
+         site_nid,
+         period,
+         partner,
+         snu,
+         psnu,
+         sitename,
+         motive,
+         age,
+         sex,
+         population,
+         keypop,
+         standarddisag,
+         source,
+         TX_PVLS_D,
+         TX_PVLS_N) %>% 
   glimpse()
 
 
@@ -258,5 +286,5 @@ df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%
 
 readr::write_tsv(
   df,
-  "Dataout/adhoc_vl_source.txt",
+  "Dataout/em_vl_source.txt",
   na ="")
