@@ -13,149 +13,175 @@ library(ggthemes)
 library(scales)
 
 
-#-----------------------------------------------------------------------------------
-# IMPORT ECHO SUBMISSION
-# NOTE THAT THE MONTH COLUMN NEEDS TO BE IN 5 DIGIT EXCEL FORMAT IN ORDER FOR CODE TO RUN WITHOUT RETURNING ERRORS.  
+# IMPORT DATA -------------------------------------------------------------
 
 
-df <- read_csv("Data/Ajuda/ERDSD/AJUDA_Transformed_Jan22.txt")
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+  select(sisma_uid = sisma_id,
+         datim_uid =  orgunituid,
+         site_nid,
+         partner = `IP FY20`,
+         snu = SNU,
+         psnu = Psnu,
+         sitename = Sitename,
+         his_epts = epts,
+         his_emr = emr,
+         his_idart = idart,
+         his_disa = disa,
+         support_ovc = ovc,
+         support_ycm = ycm,
+         ovc,
+         ycm,
+         latitude = Lat,
+         longitude = Long)
 
 
-# 
-# df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Jan22.xlsx", 
-#                   sheet = "Jul_Jan2022",
-#                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
-# # 
-# # df0 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_Dez21.xlsx", 
-# #                                        sheet = "Jul_Dec2021",
-# #                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
-# 
-# df1 <- read_excel("Data/Ajuda/ERDSD/AJUDA_Transformed_July12.xlsx", 
-#                   sheet = "Jan_Jun2021",
-#                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
-# 
-# 
-# df2 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
-#                   sheet = "Aug_Dec2020",
-#                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
-# 
-# df3 <- read_excel("Data/Ajuda/ERDSD/AJUDA_NewStructure_Mar16_Revised.xlsx", 
-#                   sheet = "Feb_Jul2020",
-#                   col_types = c("text", "text", "text", "text", "text", "text", "numeric", "text", "numeric", "text", "numeric", "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "numeric"))
+df <- read_csv("Data/Ajuda/ERDSD/AJUDA_Transformed.txt")
 
-
-
-
-AJUDA_Site_Map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>% 
-  dplyr::select(-c(SNU, Psnu, Sitename, em_wave))
 
 #-------------------------------------------------------------------  ----------------
 # DEFINE PATH FOR OUTPUT
 
+
 em_erdsd <- ("Dataout/em_erdsd.txt") 
 
-#-----------------------------------------------------------------------------------
-# UNION DATA FROM IMPORTS
-# 
-# df <- dplyr::bind_rows(df0, df1, df2, df3)
 
-#-----------------------------------------------------------------------------------
-# COERCE 5 DIGIT NUMBER TO DATE AND REMOVE UNNEEDED VARIABLES
+# PROCESS ER/DSD DATAFRAME ------------------------------------------------
 
-df <- df %>%
-  dplyr::rename(Orgunituid = DATIM_code,
-                Site = `Health Facility`) %>% 
-  glimpse()
-
-#-----------------------------------------------------------------------------------
-# PROCESS DATAFRAME AND CALCULATE VARIABLES
 
 df_tidy <- df %>% 
-  dplyr::mutate(row_n = row_number()) %>% 
-  tidyr::pivot_wider(names_from = Indicator, values_from = value, values_fill = 0) %>% 
-  dplyr::mutate(ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
-                ER1Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER1Month),
-                ER1Month_Retained = case_when(!PatientType == "Total" & ER_Status == "Retained" ~ ER1Month),
-                ER1Month_TransferredOut = case_when(!PatientType == "Total" & ER_Status == "TransferredOut" ~ ER1Month),
-                ER4Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER4Month),
-                ER4Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER4Month),
-                ER4Month_Retained = case_when(!PatientType == "Total" & ER_Status == "Retained" ~ ER4Month),
-                ER4Month_TransferredOut = case_when(!PatientType == "Total" & ER_Status == "TransferredOut" ~ ER4Month),
-                ER4Month_LTFU = case_when(!PatientType == "Total" & ER_Status == "LTFU" ~ ER4Month),
-                IMER1_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ IMER1),
-                IMER1_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ IMER1),
-                IMER1B_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ IMER1B),
-                IMER1B_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ IMER1B),
-                TX_CURR_KP = case_when(PatientType == "KeyPop" ~ TX_CURR),
-                TX_NEW_KP = case_when(PatientType == "KeyPop" ~ TX_NEW),
-                TX_CURR_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_CURR),
-                TX_NEW_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_NEW),
-                AgeCoarse = if_else(PatientType %in% c("Pediatrics"), "<15", 
-                                    if_else(PatientType %in% c("Adults", "Non-Pregnant Adults", "Pregnant", "Breastfeeding"), "15+", ""))) %>% 
-  dplyr::left_join(AJUDA_Site_Map, by = c("Orgunituid" = "orgunituid")) %>% 
-  dplyr::select(-c(...1, SISMA_code, `IP FY20`, Type, ajuda, ajuda_phase, Period, IMER1, IMER1B, ER1Month, ER4Month, TX_CURR, TX_NEW, row_n)) %>% 
-  dplyr::rename(TX_CURR = TX_CURR_2,
-                TX_NEW = TX_NEW_2,
-                period = Months) %>% 
-  dplyr::filter(!PatientType == "Total") %>% 
-  dplyr::relocate(sisma_id, Lat, Long, .before = 7) %>% 
-  dplyr::relocate(emr, epts, idart, disa, conflict, corridor, ovc, ycm, pmtct_pda, .before = 10) %>% 
-  dplyr::relocate(AgeCoarse, .after = 20) %>% 
+  mutate(row_n = row_number()) %>% 
+  pivot_wider(names_from = Indicator, values_from = value, values_fill = 0) %>% 
+  mutate(ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
+         ER1Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER1Month),
+         ER1Month_Retained = case_when(!PatientType == "Total" & ER_Status == "Retained" ~ ER1Month),
+         ER1Month_TransferredOut = case_when(!PatientType == "Total" & ER_Status == "TransferredOut" ~ ER1Month),
+         ER4Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER4Month),
+         ER4Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER4Month),
+         ER4Month_Retained = case_when(!PatientType == "Total" & ER_Status == "Retained" ~ ER4Month),
+         ER4Month_TransferredOut = case_when(!PatientType == "Total" & ER_Status == "TransferredOut" ~ ER4Month),
+         ER4Month_LTFU = case_when(!PatientType == "Total" & ER_Status == "LTFU" ~ ER4Month),
+         IMER1_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ IMER1),
+         IMER1_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ IMER1),
+         IMER1B_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ IMER1B),
+         IMER1B_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ IMER1B),
+         TX_CURR_KP = case_when(PatientType == "KeyPop" ~ TX_CURR),
+         TX_NEW_KP = case_when(PatientType == "KeyPop" ~ TX_NEW),
+         TX_CURR_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_CURR),
+         TX_NEW_2 = case_when(!PatientType == "KeyPop" & !PatientType == "Total" ~ TX_NEW),
+         AgeCoarse = if_else(PatientType %in% c("Pediatrics"), "<15", 
+                             if_else(PatientType %in% c("Adults", "Non-Pregnant Adults", "Pregnant", "Breastfeeding"), "15+", ""))) %>% 
+  filter(!PatientType == "Total") %>%
+  select(-c(TX_CURR, TX_NEW, row_n)) %>% 
+  rename(TX_CURR = TX_CURR_2,
+         TX_NEW = TX_NEW_2,
+         TX_CURR_prev = previous_TX_CURR,
+         TX_MMD = MMD,
+         DSD_One = OneDSD,
+         DSD = DSD,
+         DSD_3MD = `3MDD`,
+         DSD_6MD = `6MDD`,
+         DSD_FluxoRa = FluxoRa,
+         DSD_GAAC = GAAC,
+         DSD_AFam = AFam,
+         DSD_ClubA = ClubA,
+         DSD_DCom = DComm) %>% 
   glimpse()
 
-test <- df_tidy %>% 
-  filter(Date == "2021-11-20")
 
-sum(test$TX_CURR, na.rm = T)
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
-#-----------------------------------------------------------------------------------
-# PRINT DATAFRAME TO DISK
+
+volumn_period <- df_tidy %>% 
+  select(DATIM_code, Months, TX_CURR) %>% 
+  filter(Months == max(Months)) %>%
+  group_by(DATIM_code, Months) %>% 
+  summarize(TX_CURR = sum(TX_CURR, na.rm = T)) %>% 
+  mutate(site_volume = case_when(
+    TX_CURR < 1000 ~ "Low",
+    between(TX_CURR, 1000, 5000) ~ "Medium",
+    TX_CURR > 5000 ~ "High",
+    TRUE ~ "Not Reported")) %>% 
+  select(DATIM_code, site_volume) %>% 
+  glimpse()
+  
+
+# JOIN META DATA AND CLEAN DATAFRAME --------------------------------
+
+
+df_tidy_2 <- df_tidy %>% 
+  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
+  left_join(volumn_period, by = c("DATIM_code" = "DATIM_code")) %>% 
+  mutate(
+    agency = case_when(
+      partner == "ECHO" ~ "USAID",
+      partner == "JHPIEGO-DoD" ~ "DoD",
+      TRUE ~ "CDC")) %>% 
+  select(datim_uid = DATIM_code,
+         sisma_uid,
+         site_nid = SISMA_code,
+         period = Months,
+         agency,
+         partner,
+         snu,
+         psnu,
+         sitename,
+         site_volume,
+         ends_with("tude"),
+         starts_with("support"),
+         starts_with("his"),
+         num_den = NumDen,
+         patient_type = PatientType,
+         dsd_eligibility = DSD_Eligibility,
+         keypop = KeyPop,
+         er_status = ER_Status,
+         dispensation = Dispensation,
+         age = AgeAsEntered,
+         age_coarse = AgeCoarse,
+         sex = Sex,
+         starts_with("TX"),
+         starts_with(c("ER1Month", "ER4Month", "IMER")),
+         starts_with("DSD")) %>% 
+  glimpse()
+
+
+
+# PRINT DATAFRAME TO DISK -------------------------------------------------
+
 
 write_tsv(
-  df_tidy,
+  df_tidy_2,
   {em_erdsd})
 
-#-----------------------------------------------------------------------------------
-# VISUALS WITH GGPLOT2
 
-df_tidy %>% 
-  ggplot(aes(x = Date, y = TX_CURR, color = Partner)) + 
+# TABLES & GRAPHS --------------------------------------------------
+
+
+df_tidy_2 %>% 
+  filter(period == "2022-01-20") %>% 
+  count(snu,
+        sort = TRUE,
+        wt = TX_CURR,
+        name = "TX_CURR")
+
+df_tidy_2 %>% 
+  count(period,
+        sort = TRUE,
+        wt = TX_CURR,
+        name = "TX_CURR")
+
+
+df_tidy_graph <- df_tidy_2 %>% 
+  group_by(period, partner, snu) %>% 
+  summarize(TX_CURR = sum(TX_CURR, na.rm = T)) %>% 
+  ungroup()
+
+
+df_tidy_graph %>% 
+  ggplot(aes(x = period, y = TX_CURR, color = partner)) + 
   geom_col() + 
   labs(title = "TX_CURR Trend by Partner",
        subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
        color = "Partner") + 
   theme_solarized() + 
   theme(axis.title = element_text())
-
-ggplot(data = df_tidy) +
-  geom_col(
-    mapping = aes(x = Date, y = TX_CURR, color = Partner)
-  ) + 
-  labs(title = "TX_CURR Trend by Partner",
-       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
-       color = "Partner") + 
-  theme_solarized() + 
-  theme(axis.title = element_text())
-  
-
-df_tidy_group <- df_tidy %>% 
-  group_by(Date, Partner) %>%
-  summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE))
-
-
-ggplot(df_tidy_group, aes(Date, TX_CURR, color = Partner)) +
-  geom_line() +
-  theme_wsj()
-
-ggplot(df_tidy_group, aes(Date, TX_CURR, color = Partner)) +
-  geom_col() +
-  labs(title = "TX_CURR Trend by Partner",
-       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
-       color = "Partner") + 
-  theme_solarized() + 
-  theme(axis.title = element_text())
-
-
-  theme_wsj()
-
-
