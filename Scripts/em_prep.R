@@ -15,9 +15,9 @@ library(ggthemes)
 # DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 # 
 
-month <- "01/01/2022" # UPDATE
-monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2022_01.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Jan_2022.xlsx"
+month <- "01/02/2022" # UPDATE
+monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2022_02.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/PrEP_Monthly Report_FEV_2022_ECHO.xlsx"
 
 
 

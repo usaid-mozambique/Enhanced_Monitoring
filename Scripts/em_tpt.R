@@ -16,16 +16,16 @@ rm(list = ls())
 # DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! ------------
 
 
-month <- "2021-12-20" # UPDATE
-monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2021_12.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-02-20" # UPDATE
+monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/DOD__Dec_2021final 20122021 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/EGPAF_Monitoria Intensiva_Dec_21_ Template_FY22 12_20_2021_updated (003).xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva_ Template_FY22 12_20_2021_updated10012022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/NON MER Indicators Template_FY22 02_20_2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February_2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
 
 ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
   select(sisma_uid = sisma_id,
@@ -47,12 +47,21 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
          longitude = Long)
 
 
+
+
 # CREATE FUNCTION TPT RESHAPE ---------------------------------------------
+
 
 
 tpt_reshape <- function(filename, ip){
   
   df <- read_excel(filename, sheet = "TB", 
+                   col_types = c("numeric",
+                                 "text", "text", "text", "text", "text",
+                                 "numeric", "numeric", "text", "numeric",
+                                 "numeric", "numeric", "numeric",
+                                 "numeric", "numeric", "numeric",
+                                 "numeric", "numeric"),
                    skip = 7) %>%
     select(c(No,
              Partner,
@@ -76,10 +85,20 @@ tpt_reshape <- function(filename, ip){
 }
 
 
+
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
+dod <- read_excel("Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx", 
+                  sheet = "TB", col_types = c("numeric", 
+                                              "text", "text", "text", "text", "text", 
+                                              "numeric", "numeric", "text", "numeric", 
+                                              "numeric", "numeric", "numeric", 
+                                              "numeric", "numeric", "numeric", 
+                                              "numeric"), skip = 7)
 
-dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
+
+
+# dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
 echo <- tpt_reshape(ECHO, "ECHO")
 ariel <- tpt_reshape(ARIEL, "ARIEL")
 ccs <- tpt_reshape(CCS, "CCS")
@@ -131,7 +150,7 @@ readr::write_csv(
 # TEMPORARY WORKAROUND ----------------------------------------------------
 
 
-temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_01_vc.csv")
+temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_02.csv")
 
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
