@@ -15,20 +15,22 @@ library(glue)
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
 
-month <- "2021-12-20" # UPDATE EVERY MONTH
-monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2021_12.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-02-20" # UPDATE EVERY MONTH
+monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_02.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 monthly_compile <- "Dataout/MQ_CV/CV_compile.txt"
 final_compile <- "Dataout/em_mqcv.txt"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
 # dod <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
-echo <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/Monitoria Intensiva_ Template_FY22 12_20_2021_updated_ECHO.xlsx"
-fgh <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/FGH_DEC_21_Monitoria Intensiva Template FY22_122021_Updated_ January 6_2022.xlsx"
-icap <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ICAP_Dezembro_2021 Monitoria Intensiva_ Template_FY22 12_20_2021_updated10012022.xlsx"
-ariel <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
-ccs <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/NON MER Indicators Template_FY22 12_20_2021 CCS.xlsx"
-egpaf <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/EGPAF_Monitoria Intensiva_Dec_21_ Template_FY22 12_20_2021_updated (003).xlsx"
+
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/NON MER Indicators Template_FY22 02_20_2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February_2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
 
 
 # LOAD DATASETS -----------------------------------------------------------
@@ -311,12 +313,12 @@ cv_tidy <- function(filename, ip){
 # IMPORT & RESHAPE cv SUBMISSIONS -----------------------------------------------------------
 
 # dod <- cv_tidy(dod, "JHPIEGO-DoD")
-echo <- cv_tidy(echo, "ECHO")
-fgh <- cv_tidy(fgh, "FGH")
-ariel <- cv_tidy(ariel, "ARIEL")
-icap <- cv_tidy(icap, "ICAP")
-ccs <- cv_tidy(ccs, "CCS")
-egpaf <- cv_tidy(egpaf, "EGPAF")
+echo <- cv_tidy(ECHO, "ECHO")
+fgh <- cv_tidy(FGH, "FGH")
+ariel <- cv_tidy(ARIEL, "ARIEL")
+icap <- cv_tidy(ICAP, "ICAP")
+ccs <- cv_tidy(CCS, "CCS")
+egpaf <- cv_tidy(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
