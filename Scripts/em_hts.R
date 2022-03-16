@@ -14,6 +14,10 @@ library(glue)
 library(ggthemes)
 
 
+# DEFINE HFR MONTH --------------------------------------------------------
+
+hfr_month <- "2022-02-01"
+
 ## KEY SISMA SEARCH WORD(S) "ano"
 ## KEY SISMA SEARCH WORD(S) "indice", "diagno", "ligad"
 ## KEY SISMA SEARCH WORD(S) "historial", "chave"
@@ -491,36 +495,36 @@ readr::write_tsv(
   "Dataout/em_hts.txt")
 
 
-# CHECKS ------------------------------------------------------------------
+# HFR ------------------------------------------------------------------
 
 
-sum(ats_all_2$value, na.rm = TRUE) # 11686094 RIGHT ANSWER (HTS 11028477, POS 657617)
+hfr <- ats_results %>% 
+  filter(period == "2022-02-01",
+         indicator %in% c("HTS_TST", "HTS_TST_POS"),
+         !modality %in% c("Community")) %>% 
+  mutate(mech_code = "70212",
+         operatingunit = "Mozambique",
+         date = "01/02/2022") %>%
+  right_join(ajuda_site_map) %>%
+  filter(partner == "ECHO") %>% 
+  select(date, 
+         orgunit = sitename,
+         orgunituid = datim_uid,
+         mech_code, 
+         partner,
+         operatingunit,
+         psnu,
+         indicator, 
+         sex, 
+         agecoarse = age_coarse,
+         otherdisaggregate = result_status,
+         val = value
+         )
+  
+test <- hfr %>% 
+  filter(indicator == "HTS_TST")
 
-
-sum(ats_all_3$value) # THE JOIN WAS ADDING LINES AND EXTRA RESULTS TO DATASET BEFORE MAKING SURE THERE WERE NON-DUPLICAT SISMA_UIDs IN THE AJUDA SITE MAP
-
-
-ats_all_3 %>% 
-  filter(psnu == "Kamubukwana") %>% 
-  filter(as_date(period) >= as_date("2021-01-01") & 
-           as_date(period) <= as_date("2021-12-31")) %>% 
-  count(sitename,
-        sort = TRUE,
-        wt = HTS_TST,
-        name = "HTS_TST")
-
-
-
-
-
-
-
-
-
-
-readr::write_tsv(
-  ats_results,
-  "Dataout/em_ats_test.txt")
+sum(test$val)
 
 
 
