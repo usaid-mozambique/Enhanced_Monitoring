@@ -13,7 +13,7 @@ library(glue)
 rm(list = ls())
 
 
-# DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! ------------
+# DEFINE MONTH AND PATHS ---------------------------
 
 
 month <- "2022-02-20" # UPDATE
@@ -26,6 +26,12 @@ ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
 ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
+
+historic_files_path <- "Dataout/TPT/_CompileHistoric/"
+
+
+# LOAD METADATA -----------------------------------------------------------
+
 
 ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
   select(sisma_uid = sisma_id,
@@ -47,8 +53,6 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
          longitude = Long)
 
 
-
-
 # CREATE FUNCTION TPT RESHAPE ---------------------------------------------
 
 
@@ -56,12 +60,12 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
 tpt_reshape <- function(filename, ip){
   
   df <- read_excel(filename, sheet = "TB", 
-                   col_types = c("numeric",
-                                 "text", "text", "text", "text", "text",
-                                 "numeric", "numeric", "text", "numeric",
-                                 "numeric", "numeric", "numeric",
-                                 "numeric", "numeric", "numeric",
-                                 "numeric", "numeric"),
+                   col_types = c("numeric", 
+                                 "text", "text", "text", "text", "text", 
+                                 "numeric", "numeric", "text", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric"),
                    skip = 7) %>%
     select(c(No,
              Partner,
@@ -88,17 +92,8 @@ tpt_reshape <- function(filename, ip){
 
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
-dod <- read_excel("Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx", 
-                  sheet = "TB", col_types = c("numeric", 
-                                              "text", "text", "text", "text", "text", 
-                                              "numeric", "numeric", "text", "numeric", 
-                                              "numeric", "numeric", "numeric", 
-                                              "numeric", "numeric", "numeric", 
-                                              "numeric"), skip = 7)
 
-
-
-# dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
+dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
 echo <- tpt_reshape(ECHO, "ECHO")
 ariel <- tpt_reshape(ARIEL, "ARIEL")
 ccs <- tpt_reshape(CCS, "CCS")
@@ -191,18 +186,81 @@ tpt_tidy_history <- temp %>%
          value) %>% 
   glimpse()
 
+
+
+# WRITE MONTHLY OUTPUT FILE TO DISK ---------------------------------------
+
+
 readr::write_tsv(
   tpt_tidy_history,
   "Dataout/em_tpt.txt")
 
 
+#---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 
+historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+chr_files <- historic_files[historic_files %in% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
+non_chr_files <- historic_files[historic_files %ni% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
+
+temp_chr_files <- chr_files %>%
+  map(~ read_csv(file.path(historic_files_path, .))) %>%
+  reduce(rbind) %>% 
+  mutate(Period = as.Date(Period, "%d/%m/%Y")) 
+
+temp_non_chr_files <- non_chr_files %>%
+  map(~ read_csv(file.path(historic_files_path, .))) %>%
+  reduce(rbind) 
+
+tpt_tidy_history <- bind_rows(temp_chr_files, temp_non_chr_files)
 
 
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
 
+volumn_period <- tpt_tidy_history %>% 
+  mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
+  select(DATIM_code, date, indicator, value) %>% 
+  filter(date == max(date),
+         indicator == "TX_CURR") %>% 
+  mutate(site_volume = case_when(
+    value < 1000 ~ "Low",
+    between(value, 1000, 5000) ~ "Medium",
+    value > 5000 ~ "High",
+    TRUE ~ "Not Reported")) %>% 
+  select(DATIM_code, site_volume) %>% 
+  glimpse()
 
 
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+
+
+tpt_tidy_history_2 <- tpt_tidy_history %>%
+  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
+  left_join(volumn_period) %>% 
+  select(datim_uid = DATIM_code,
+         sisma_uid,
+         site_nid,
+         period = Period,
+         partner,
+         snu,
+         psnu,
+         sitename,
+         site_volume,
+         ends_with("tude"),
+         starts_with("support"),
+         starts_with("his"),
+         indicator,
+         attribute,
+         value) %>% 
+  glimpse()
+
+
+# PRINT FINAL OUTPUT TO DISK ----------------------------------------------
+
+readr::write_tsv(
+  tpt_tidy_history,
+  "Dataout/em_tpt.txt")
 
 
