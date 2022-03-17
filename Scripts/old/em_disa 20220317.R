@@ -1,11 +1,9 @@
 
 #------LOAD CORE TIDYVERSE & OTHER PACKAGES-------------------------------------------
 
-
 library(tidyverse)
 library(glamr)
 library(glitr)
-library(ggthemes)
 library(janitor)
 library(glue)
 library(readxl)
@@ -13,25 +11,17 @@ library(openxlsx)
 
 rm(list = ls())
 
-
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-
-period <- "2022-02-20"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Fevereiro_2022.xlsx"
-file_output <- "Dataout/DISA/monthly_processed/2022_02.txt"
-
-historic_files_path <- "Dataout/DISA/monthly_processed/"
-file_output_historic <- "Dataout/em_disa.txt"
-
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral_Janeiro_2022.xlsx"
+file_output <- "Dataout/DISA/monthly_processed/2022_01.txt"
+file_append <- "Dataout/em_disa.txt"
+period <- "2022-01-20"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_MAR112022.xlsx") %>%
-  select(DISA_ID, 
-         sisma_uid = `SISMA DHIS2`, 
-         datim_uid, 
-         ajuda)
+disa_datim_map <- read_excel("Documents/disa_datim_map_FEB182022.xlsx") %>%
+  select(-c(Notes))
 
 datim_ou_map <- read_excel("Documents/tx_site_reference.xlsx")
 
@@ -98,14 +88,13 @@ rm(xAge, xPW, xLW)
 
 df_vl <- df_vl %>% 
   select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
-  rename(site_nid = `SISMA ID`,
-         disa_uid = DISA_ID,
-         snu = PROVINCIA,
-         psnu = DISTRITO,
-         sitename = US,
+  rename(sisma_id = `SISMA ID`,
+         province = PROVINCIA,
+         district = DISTRITO,
+         site = US,
          age = Age,
          sex = Sex) %>% 
-  relocate(c(group), .before = sitename) %>% 
+  relocate(c(group), .before = site) %>% 
   pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
   mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
                                    grepl("Fal", indicator) ~ "Theraputic Failure",
@@ -120,21 +109,21 @@ df_vl <- df_vl %>%
 #---- RECODE VL AGE/SEX VALUES -----------------------------------------------
 
 
-mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
-       age = recode(age, "No Age Specified" = "Unknown Age"),
-       age = recode(age, "Não especificada" = "Unknown Age"),
-       age = recode(age, "NS" = "Unknown Age"),
-       age = recode(age, "<1" = "<01"),
-       age = replace_na(age, "Unknown Age"),
-       
-       
-       sex = recode(sex, "UNKNOWN" = "Unknown"),
-       sex = recode(sex, "Not Specified" = "Unknown"),
-       sex = recode(sex, "Não especificado" = "Unknown"),
-       sex = recode(sex, "F" = "Female"),
-       sex = recode(sex, "M" = "Male"),
-       sex = replace_na(sex, "Unknown")
-) %>% 
+  dplyr::mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
+                age = recode(age, "No Age Specified" = "Unknown Age"),
+                age = recode(age, "Não especificada" = "Unknown Age"),
+                age = recode(age, "NS" = "Unknown Age"),
+                age = recode(age, "<1" = "<01"),
+                age = replace_na(age, "Unknown Age"),
+                
+                
+                sex = recode(sex, "UNKNOWN" = "Unknown"),
+                sex = recode(sex, "Not Specified" = "Unknown"),
+                sex = recode(sex, "Não especificado" = "Unknown"),
+                sex = recode(sex, "F" = "Female"),
+                sex = recode(sex, "M" = "Male"),
+                sex = replace_na(sex, "Unknown")
+                ) %>% 
 
   
 #---- FILTER VL LINES ONLY >0 -----------------------------------------------
@@ -149,11 +138,10 @@ mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
 
 
 df_tat <- df_tat %>% 
-  rename(site_nid = `SISMA ID`,
-         disa_uid = DISA_ID,
-         snu = PROVINCIA,
-         psnu = DISTRITO,
-         sitename = US) %>% 
+  rename(sisma_id = `SISMA ID`,
+         province = PROVINCIA,
+         district = DISTRITO,
+         site = US) %>% 
   pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
   mutate(tat_step = recode(tat_step, 
                            "COLHEITA À RECEPÇÃO" = "S1: Collection to Receipt",
@@ -182,7 +170,7 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
   mutate(row = row_number(),
          tat_step = na_if(tat_step, "temp")) %>% 
   pivot_wider(names_from = indicator, values_from = value, values_fill = NULL) %>% 
-  group_by(period, snu, psnu, sitename, disa_uid, site_nid, age, group, sex, motive, tat_step) %>%
+  group_by(period, province, district, site, DISA_ID, sisma_id, age, group, sex, motive, tat_step) %>%
   summarise(VL = sum(VL, na.rm = T),
             VLS = sum(VLS, na.rm = T),
             TAT = sum(TAT, na.rm = T)) %>%
@@ -190,32 +178,14 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
   glimpse()
 
 
-# PRINT MONTHLY OUTPUT ----------------------------------------------------
+#---- JOIN DISA AJUDA MAP -------------------------------
 
 
-readr::write_tsv(
-  disa,
-  {file_output},
-  na ="")
-
-
-# SURVEY ALL MONTHLY DISA DATASETS AND COMPILE ----------------------------
-
-
-historic_files <- dir({historic_files_path}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-disa_temp <- historic_files %>%
-  map(~ read_tsv(file.path(historic_files_path, .))) %>%
-  reduce(rbind)
-
-
-# JOIN DISA / DATIM MAP TO COMPILED FILE ---------
-
-
-disa_meta <- disa_temp %>% 
-  left_join(disa_datim_map, by = c("disa_uid" = "DISA_ID")) %>% 
+disa_meta <- disa %>% 
+  left_join(disa_datim_map) %>% 
   mutate(ajuda = replace_na(ajuda, 0)) %>% 
-  relocate(c(ajuda, sisma_uid, datim_uid), .before = disa_uid)
+  rename(disa_id = DISA_ID) %>% 
+  relocate(c(ajuda, datim_uid), .before = disa_id)
 
 
 #---- FILTER OUT ROWS WITHOUT DATIM UID AND GROUP DATA -------------------------------
@@ -223,7 +193,7 @@ disa_meta <- disa_temp %>%
 
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
-  group_by(period, sisma_uid, datim_uid, site_nid, age, group, sex, motive, tat_step) %>% 
+  group_by(period, datim_uid, age, group, sex, motive, tat_step) %>% 
   summarise(VL = sum(VL),
             VLS = sum(VLS),
             TAT = sum(TAT)) %>%
@@ -232,10 +202,8 @@ disa_final <- disa_meta %>%
     clinical_partner == "MISAU" ~ "Sustainability",
     TRUE ~ as.character("AJUDA"))) %>% 
   select(period,
-         sisma_uid,
          datim_uid,
-         site_nid,
-         snu = snu1,
+         snu1,
          psnu,
          sitename,
          support_type,
@@ -258,7 +226,7 @@ disa_final <- disa_meta %>%
 disa_missing <- disa_meta %>% 
   filter(is.na(datim_uid),
          group == "Age") %>% 
-  group_by(period, snu, psnu, sitename, disa_uid) %>% 
+  group_by(period, province, district, site, disa_id) %>% 
   summarize(
     across(c(VL, VLS, TAT), .fns = sum), .groups = "drop"
   )
@@ -266,36 +234,24 @@ disa_missing <- disa_meta %>%
 sum(disa_final$VL, na.rm = T)
 sum(disa_missing$VL, na.rm = T)
 
-
-
-# GRAPH HISTORIC DATA FOR QC ----------------------------------------------
-
-df_vl_plot <- disa_final %>% 
-  filter(group == "Age") %>% 
-  group_by(period, partner, snu) %>% 
-  summarize(VL = sum(VL, na.rm = T)) %>% 
-  ungroup()
-
-df_vl_plot %>% 
-  ggplot(aes(x = period, y = VL, color = partner)) + 
-  geom_col() + 
-  labs(title = "TX_CURR Trend by Partner",
-       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
-       color = "Partner") + 
-  theme_solarized() + 
-  theme(axis.title = element_text())
-
-
-# PRINT OUTPUTS TO DISK ------------------------------------------------------
-
-
-write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl_feb22.xlsx"})
-
+# PRINT OUTPUT TO DISK ------------------------------------------------------
+# WRITE MONTHLY FILE
 
 readr::write_tsv(
   disa_final,
-  {file_output_historic},
-  na = "")
+  {file_output},
+  na ="")
+
+write.xlsx(disa_missing,
+           {"Dataout/DISA/missing_sites_mfl_jan22.xlsx"})
+
+
+
+# APPEND MONTHLY TO HISTORICAL FILE
+readr::write_tsv(
+  disa_final,
+  {file_append},
+  na = "",
+  append = TRUE)
 
 
