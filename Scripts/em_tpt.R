@@ -141,60 +141,6 @@ readr::write_csv(
   tpt_tidy,
   {monthly_dataset})
 
-# 
-# # TEMPORARY WORKAROUND ----------------------------------------------------
-# 
-# 
-# temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_02.csv")
-# 
-# 
-# #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-# 
-# volumn_period <- temp %>% 
-#   mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
-#   select(DATIM_code, date, indicator, value) %>% 
-#   filter(date == max(date),
-#          indicator == "TX_CURR") %>% 
-#   mutate(site_volume = case_when(
-#     value < 1000 ~ "Low",
-#     between(value, 1000, 5000) ~ "Medium",
-#     value > 5000 ~ "High",
-#     TRUE ~ "Not Reported")) %>% 
-#   select(DATIM_code, site_volume) %>% 
-#   glimpse()
-# 
-# 
-# #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-# 
-# tpt_tidy_history <- temp %>%
-#   left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
-#   left_join(volumn_period) %>% 
-#   select(datim_uid = DATIM_code,
-#          sisma_uid,
-#          site_nid,
-#          period = Period,
-#          partner,
-#          snu,
-#          psnu,
-#          sitename,
-#          site_volume,
-#          ends_with("tude"),
-#          starts_with("support"),
-#          starts_with("his"),
-#          indicator,
-#          attribute,
-#          value) %>% 
-#   glimpse()
-# 
-# 
-# 
-# # WRITE MONTHLY OUTPUT FILE TO DISK ---------------------------------------
-# 
-# 
-# readr::write_tsv(
-#   tpt_tidy_history,
-#   "Dataout/em_tpt.txt")
-
 
 #---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
@@ -211,7 +157,8 @@ temp_chr_files <- chr_files %>%
 
 temp_non_chr_files <- non_chr_files %>%
   map(~ read_csv(file.path(historic_files_path, .))) %>%
-  reduce(rbind) 
+  reduce(rbind) %>% 
+  mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
 tpt_tidy_history <- bind_rows(temp_chr_files, temp_non_chr_files)
 
