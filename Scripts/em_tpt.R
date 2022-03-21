@@ -260,7 +260,7 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------
 
 readr::write_tsv(
-  tpt_tidy_history,
+  tpt_tidy_history_2,
   "Dataout/em_tpt.txt")
 
 
