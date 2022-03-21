@@ -16,8 +16,8 @@ rm(list = ls())
 # DEFINE MONTH AND PATHS ---------------------------
 
 
-month <- "2022-02-20" # UPDATE
-monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-02-20" # UPDATE EACH MONTH
+monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv") # UPDATE EACH MONTH
 
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
 ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
@@ -27,7 +27,7 @@ EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_F
 ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
 
-historic_files_path <- "Dataout/TPT/_CompileHistoric/"
+historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
 
 # LOAD METADATA -----------------------------------------------------------
@@ -141,59 +141,59 @@ readr::write_csv(
   tpt_tidy,
   {monthly_dataset})
 
-
-# TEMPORARY WORKAROUND ----------------------------------------------------
-
-
-temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_02.csv")
-
-
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-
-volumn_period <- temp %>% 
-  mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
-  select(DATIM_code, date, indicator, value) %>% 
-  filter(date == max(date),
-         indicator == "TX_CURR") %>% 
-  mutate(site_volume = case_when(
-    value < 1000 ~ "Low",
-    between(value, 1000, 5000) ~ "Medium",
-    value > 5000 ~ "High",
-    TRUE ~ "Not Reported")) %>% 
-  select(DATIM_code, site_volume) %>% 
-  glimpse()
-
-
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-
-tpt_tidy_history <- temp %>%
-  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
-  left_join(volumn_period) %>% 
-  select(datim_uid = DATIM_code,
-         sisma_uid,
-         site_nid,
-         period = Period,
-         partner,
-         snu,
-         psnu,
-         sitename,
-         site_volume,
-         ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
-         indicator,
-         attribute,
-         value) %>% 
-  glimpse()
-
-
-
-# WRITE MONTHLY OUTPUT FILE TO DISK ---------------------------------------
-
-
-readr::write_tsv(
-  tpt_tidy_history,
-  "Dataout/em_tpt.txt")
+# 
+# # TEMPORARY WORKAROUND ----------------------------------------------------
+# 
+# 
+# temp <- read_csv("Dataout/TPT/_CompileHistoric/manual_compile/TPT_2021_2022_02.csv")
+# 
+# 
+# #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# 
+# volumn_period <- temp %>% 
+#   mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
+#   select(DATIM_code, date, indicator, value) %>% 
+#   filter(date == max(date),
+#          indicator == "TX_CURR") %>% 
+#   mutate(site_volume = case_when(
+#     value < 1000 ~ "Low",
+#     between(value, 1000, 5000) ~ "Medium",
+#     value > 5000 ~ "High",
+#     TRUE ~ "Not Reported")) %>% 
+#   select(DATIM_code, site_volume) %>% 
+#   glimpse()
+# 
+# 
+# #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# 
+# tpt_tidy_history <- temp %>%
+#   left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
+#   left_join(volumn_period) %>% 
+#   select(datim_uid = DATIM_code,
+#          sisma_uid,
+#          site_nid,
+#          period = Period,
+#          partner,
+#          snu,
+#          psnu,
+#          sitename,
+#          site_volume,
+#          ends_with("tude"),
+#          starts_with("support"),
+#          starts_with("his"),
+#          indicator,
+#          attribute,
+#          value) %>% 
+#   glimpse()
+# 
+# 
+# 
+# # WRITE MONTHLY OUTPUT FILE TO DISK ---------------------------------------
+# 
+# 
+# readr::write_tsv(
+#   tpt_tidy_history,
+#   "Dataout/em_tpt.txt")
 
 
 #---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
