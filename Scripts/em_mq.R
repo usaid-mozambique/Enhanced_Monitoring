@@ -17,12 +17,9 @@ library(glue)
 
 month <- "2022-02-20" # UPDATE EVERY MONTH
 monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_02.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-monthly_compile <- "Dataout/MQ_CV/CV_compile.txt"
 final_compile <- "Dataout/em_mqcv.txt"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
-
-# dod <- "Data/Ajuda/ER_DSD_TPT_VL/2021_12/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021.xlsx"
 
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
 ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
@@ -31,6 +28,8 @@ ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
 ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
+
+historic_files_path <- "Dataout/MQ_CV/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
 
 # LOAD DATASETS -----------------------------------------------------------
@@ -339,40 +338,41 @@ readr::write_tsv(
   na = "",
   {monthly_dataset})
 
-# APPEND MONTHLY TO HISTORICAL FILE
-readr::write_tsv(
-  cv_tidy,
-  na = "",
-  append = TRUE,
-  {monthly_compile})
+#---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
+historic_files <- dir({historic_files_path}, pattern = "*.txt")
 
 
-# TEMPORARY WORKAROUND ----------------------------------------------------
+historic_import <- historic_files %>%
+  map(~ read_tsv(file.path(historic_files_path, .))) %>%
+  reduce(rbind) %>% 
+  mutate(month = as.Date(month, "%Y/%m/%d")) 
 
+#---- JOIN METADATA ---------------------------------
 
-cv_compile <- read_delim({monthly_compile}, 
-                         delim = "\t", escape_double = FALSE, 
-                         trim_ws = TRUE) %>%
+cv_tidy_historic <- historic_import %>% 
   select(-c(No,
             Type,
             Partner,
             Province,
-            District, 
-            `Health Facility`)) %>% 
-  left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>% 
+            District,
+            `Health Facility`)) %>%
+  left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>%
   rename(datim_uid = DATIM_code,
          sisma_uid = sisma_id,
          sisma_nid = SISMA_code,
          province = snu,
          district = psnu,
-         site = sitename) %>% 
-  relocate(month:partner, .after = sisma_uid) %>% 
-  relocate(sisma_uid, .after = datim_uid) %>% 
-  pivot_wider(names_from =  indicator, values_from = value) %>% 
+         site = sitename) %>%
+  relocate(month:partner, .after = sisma_uid) %>%
+  relocate(sisma_uid, .after = datim_uid) %>%
+  pivot_wider(names_from =  indicator, values_from = value) %>%
   glimpse()
 
+# PRINT FINAL OUTPUT TO DISK ----------------------------------------------
+
 write_tsv(
-  cv_compile,
+  cv_tidy_historic,
   na = "",
   {final_compile})
   

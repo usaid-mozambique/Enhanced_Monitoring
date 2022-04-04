@@ -498,9 +498,8 @@ readr::write_tsv(
 # HFR ------------------------------------------------------------------
 
 
-hfr <- ats_results %>% 
+hfr <- ats_2 %>% 
   filter(period == "2022-02-01",
-         indicator %in% c("HTS_TST", "HTS_TST_POS"),
          !modality %in% c("Community")) %>% 
   mutate(mech_code = "70212",
          operatingunit = "Mozambique",
@@ -514,17 +513,33 @@ hfr <- ats_results %>%
          partner,
          operatingunit,
          psnu,
-         indicator, 
          sex, 
          agecoarse = age_coarse,
          otherdisaggregate = result_status,
-         val = value
+         HTS_TST,
+         HTS_TST_POS
          )
-  
-test <- hfr %>% 
-  filter(indicator == "HTS_TST")
 
-sum(test$val)
+hfr_2 <- hfr %>% 
+  pivot_longer(HTS_TST:HTS_TST_POS, names_to = "indicator", values_to = "val") %>% 
+  select(date, 
+         orgunit,
+         orgunituid,
+         mech_code, 
+         partner,
+         operatingunit,
+         psnu,
+         indicator,
+         sex, 
+         agecoarse,
+         otherdisaggregate,
+         val)
+  
+
+test <- hfr_2 %>% 
+  filter(indicator == "HTS_TST_POS")
+sum(test$val, na.rm = T)
+
 
 
 

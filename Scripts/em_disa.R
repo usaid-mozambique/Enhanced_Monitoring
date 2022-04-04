@@ -27,7 +27,7 @@ file_output_historic <- "Dataout/em_disa.txt"
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_MAR112022.xlsx") %>%
+disa_datim_map <- read_excel("Documents/disa_datim_map_MAR172022.xlsx") %>%
   select(DISA_ID, 
          sisma_uid = `SISMA DHIS2`, 
          datim_uid, 
@@ -267,7 +267,6 @@ sum(disa_final$VL, na.rm = T)
 sum(disa_missing$VL, na.rm = T)
 
 
-
 # GRAPH HISTORIC DATA FOR QC ----------------------------------------------
 
 df_vl_plot <- disa_final %>% 
@@ -290,7 +289,8 @@ df_vl_plot %>%
 
 
 write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl_feb22.xlsx"})
+           {"Dataout/DISA/missing_sites_mfl_feb22.xlsx"},
+           overwrite = TRUE)
 
 
 readr::write_tsv(
