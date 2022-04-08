@@ -9,6 +9,7 @@ library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
+library(gt)
 
 rm(list = ls())
 
@@ -206,8 +207,51 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------
 
+
 readr::write_tsv(
   tpt_tidy_history_2,
   "Dataout/em_tpt.txt")
 
 
+# GT TABLES ---------------------------------------------------------------
+
+
+tbl <- tpt_tidy_history_2 %>%
+  select(indicator, period, value) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format="%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = 2:13, 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(200),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique TPT Enhanced Monitoring") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
+  
+
+tbl
+  
+  
