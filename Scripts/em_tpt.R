@@ -17,16 +17,16 @@ rm(list = ls())
 # DEFINE MONTH AND PATHS ---------------------------
 
 
-month <- "2022-02-20" # UPDATE EACH MONTH
-monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv") # UPDATE EACH MONTH
+month <- "2022-03-20" # UPDATE EACH MONTH
+monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_03.csv") # UPDATE EACH MONTH
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/NON MER Indicators Template_FY22 02_20_2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February_2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 11.04.2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/FGH_MAR_22_Monitoria Intensiva Template FY22_122021_Updated_April 08_2022.xlsx"
 
 historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
@@ -60,10 +60,16 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
 
 tpt_reshape <- function(filename, ip){
   
-  df <- read_excel(filename, sheet = "TB", 
+  df <- read_excel(filename, sheet = "TPT Completion", 
+                   # col_types = c("numeric", 
+                   #               "text", "text", "text", "text", "text", 
+                   #               "numeric", "numeric", "text", "numeric", 
+                   #               "numeric", "numeric", "numeric", 
+                   #               "numeric", "numeric", "numeric", 
+                   #               "numeric"),
                    col_types = c("numeric", 
                                  "text", "text", "text", "text", "text", 
-                                 "numeric", "numeric", "text", "numeric", 
+                                 "numeric", "text", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric"),
@@ -75,7 +81,6 @@ tpt_reshape <- function(filename, ip){
              `Health Facility`,
              DATIM_code,
              SISMA_code,
-             Type,
              Period,
              TX_CURR,
              TX_CURR_TPT_Com,

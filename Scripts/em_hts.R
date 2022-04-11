@@ -16,7 +16,9 @@ library(ggthemes)
 
 # DEFINE HFR MONTH --------------------------------------------------------
 
-hfr_month <- "2022-02-01"
+hfr_month <- "2021-11-01"
+hfr_month_var <- "01/11/2021"
+
 
 ## KEY SISMA SEARCH WORD(S) "ano"
 ## KEY SISMA SEARCH WORD(S) "indice", "diagno", "ligad"
@@ -499,11 +501,11 @@ readr::write_tsv(
 
 
 hfr <- ats_2 %>% 
-  filter(period == "2022-02-01",
+  filter(period == hfr_month,
          !modality %in% c("Community")) %>% 
   mutate(mech_code = "70212",
          operatingunit = "Mozambique",
-         date = "01/02/2022") %>%
+         date = hfr_month_var) %>%
   right_join(ajuda_site_map) %>%
   filter(partner == "ECHO") %>% 
   select(date, 
@@ -534,10 +536,14 @@ hfr_2 <- hfr %>%
          agecoarse,
          otherdisaggregate,
          val)
-  
+
+readr::write_csv(
+  hfr_2,
+  "Dataout/HFR/hfr_hts.csv",
+  na = "0")
 
 test <- hfr_2 %>% 
-  filter(indicator == "HTS_TST_POS")
+  filter(indicator == "HTS_TST")
 sum(test$val, na.rm = T)
 
 
