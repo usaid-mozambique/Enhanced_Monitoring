@@ -25,7 +25,7 @@ ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_F
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_12042022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/FGH_MAR_22_Monitoria Intensiva Template FY22_122021_Updated_April 08_2022.xlsx"
 
 historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
@@ -231,7 +231,7 @@ tbl <- tpt_tidy_history_2 %>%
   gt(rowname_col = "indicator") %>% 
   
   fmt_number(
-    columns = 2:13, 
+    columns = 2:14, 
     rows = everything(),
     sep_mark = ",",
     decimals = 0) %>% 
