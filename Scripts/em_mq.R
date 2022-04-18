@@ -15,19 +15,19 @@ library(glue)
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
 
-month <- "2022-02-20" # UPDATE EVERY MONTH
-monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_02.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-03-20" # UPDATE EVERY MONTH
+monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_03.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 final_compile <- "Dataout/em_mqcv.txt"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/DOD__Fev_2022final 20022022 DOD Jhpiego Included Monitoria Intensiva de CV tab.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ARIEL Monitoria Intensiva_ Template_FY22 12_20_2021_February.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/NON MER Indicators Template_FY22 02_20_2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/Monitoria Intensiva_ Template_February_2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/EGPAF_Monitoria Intensiva_ Template_FY22 20_Fev_2022_updated.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/ICAP_Fevereiro2022_Monitoria Intensiva_ Template_FY22_11032022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_02/FGH_FEB_22_Monitoria Intensiva Template FY22.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 11.04.2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_12042022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/FGH_MAR_22_Monitoria Intensiva Template FY22_122021_Updated_April 08_2022.xlsx"
 
 historic_files_path <- "Dataout/MQ_CV/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
@@ -53,7 +53,6 @@ cv_tidy <- function(filename, ip){
                    sheet = "Monitoria Intensiva",
                    skip = 9,
                    col_types = c("text",
-                                 "text",
                                  "text",
                                  "text",
                                  "text",
@@ -311,7 +310,7 @@ cv_tidy <- function(filename, ip){
 
 # IMPORT & RESHAPE cv SUBMISSIONS -----------------------------------------------------------
 
-# dod <- cv_tidy(dod, "JHPIEGO-DoD")
+dod <- cv_tidy(DOD, "JHPIEGO-DoD")
 echo <- cv_tidy(ECHO, "ECHO")
 fgh <- cv_tidy(FGH, "FGH")
 ariel <- cv_tidy(ARIEL, "ARIEL")
@@ -352,7 +351,6 @@ historic_import <- historic_files %>%
 
 cv_tidy_historic <- historic_import %>% 
   select(-c(No,
-            Type,
             Partner,
             Province,
             District,
@@ -361,11 +359,9 @@ cv_tidy_historic <- historic_import %>%
   rename(datim_uid = DATIM_code,
          sisma_uid = sisma_id,
          sisma_nid = SISMA_code,
-         province = snu,
-         district = psnu,
-         site = sitename) %>%
-  relocate(month:partner, .after = sisma_uid) %>%
+         period = month) %>%
   relocate(sisma_uid, .after = datim_uid) %>%
+  relocate(period:partner, .after = sisma_nid) %>%
   pivot_wider(names_from =  indicator, values_from = value) %>%
   glimpse()
 

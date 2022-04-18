@@ -17,7 +17,7 @@ rm(list = ls())
 # DEFINE MONTH AND PATHS ---------------------------
 
 
-month <- "2022-03-20" # UPDATE EACH MONTH
+month <- "20/03/2022" # UPDATE EACH MONTH
 monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_03.csv") # UPDATE EACH MONTH
 
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
@@ -148,7 +148,7 @@ readr::write_csv(
   {monthly_dataset})
 
 
-#---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+#---- OPTION 1: SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 
 historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
@@ -166,7 +166,29 @@ temp_non_chr_files <- non_chr_files %>%
   reduce(rbind) %>% 
   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
-tpt_tidy_history <- bind_rows(temp_chr_files, temp_non_chr_files)
+tpt_tidy_history <- bind_rows(temp_non_chr_files, temp_chr_files)
+
+
+
+#---- OPTION 2: CREATE FUNCTION AND IMPORT ALL HISTORICAL FILES CREATING THEM WITH UNIFORM DATE CLASS ---------------------------------
+
+
+df1 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_03.csv", col_types = cols(.default = "c", value = "d"))
+df2 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_04.csv", col_types = cols(.default = "c", value = "d"))
+df3 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_05.csv", col_types = cols(.default = "c", value = "d"))
+df4 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_06.csv", col_types = cols(.default = "c", value = "d"))
+df5 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_07.csv", col_types = cols(.default = "c", value = "d"))
+df6 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_08.csv", col_types = cols(.default = "c", value = "d"))
+df7 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_09.csv", col_types = cols(.default = "c", value = "d"))
+df8 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_10.csv", col_types = cols(.default = "c", value = "d"))
+df9 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_11.csv", col_types = cols(.default = "c", value = "d"))
+df10 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_12.csv", col_types = cols(.default = "c", value = "d"))
+df11 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_01.csv", col_types = cols(.default = "c", value = "d"))
+df12 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv", col_types = cols(.default = "c", value = "d"))
+df13 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_03.csv", col_types = cols(.default = "c", value = "d"))
+
+tpt_tidy_history <- bind_rows(df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13) %>% 
+  mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
