@@ -1,5 +1,5 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
+#  LOAD CORE TIDYVERSE & OTHER PACKAGES-----------------------------------------------------------------------------------
+
 
 rm(list = ls())
 
@@ -12,43 +12,54 @@ library(openxlsx)
 library(glue)
 library(ggthemes)
 
+
 # DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
-# 
-
-month <- "01/03/2022" # UPDATE
-monthly_dataset <- "Data/Ajuda/PrEP/_CompileHistoric/PrEP_2022_03.csv" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/PrEP_Monthly Report_MARCH_2022_V2_ECHO.xlsx"
 
 
+month <- "01/06/2021" # UPDATE
+monthly_dataset <- "Dataout/PrEP/_CompileHistoric/PrEP_2021_06.txt" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Jun_2021.xlsx"
 
 #date_open <- "2021-07-01" # ONLY NEEDED FOR CIRG
 #date_close <- "2021-09-01" # ONLY NEEDED FOR CIRG
 #date_cirg <- "FY21 Q4" # ONLY NEEDED FOR CIRG
-
 #input <- "C:/Users/josep/Documents/R/r_projects/Hfr"
 
-# IMPORT DATASETS -----------------------------------------------------------------------------------
-# DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING -------------------------------- --------------------------------
+
+# DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING -----------------------------------------------------------------
+
+
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+  select(sisma_uid = sisma_id,
+         datim_uid =  orgunituid,
+         site_nid,
+         partner = `IP FY20`,
+         snu = SNU,
+         psnu = Psnu,
+         sitename = Sitename,
+         his_epts = epts,
+         his_emr = emr,
+         his_idart = idart,
+         his_disa = disa,
+         support_ovc = ovc,
+         support_ycm = ycm,
+         ovc,
+         ycm,
+         latitude = Lat,
+         longitude = Long)
+
 
 prep_submission <- read_excel({prep_submission}, sheet = "PrEP_Monthly report", .name_repair = "universal") %>%
   glimpse()
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
-  dplyr::select(orgunituid, SNU, Psnu, Sitename, Lat, Long) %>%
-  dplyr::rename(psnu = Psnu,
-                orgunit = Sitename,
-                snu = SNU,
-                latitude =  Lat,
-                longitude = Long)
 
-historic_files_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
-data_path <- "Data/Ajuda/PrEP/_CompileHistoric/"  # PATH USED IN SPECIFIC CODE TO COMPILE THE ABOVE LIST OF .CSV FILES
+historic_files_path <- "Dataout/PrEP/_CompileHistoric/"  # PATH USED TO CREATE A LIST OF ALL .CSV FILES PREVIOUSLY CREATED
 
 historic_dataset <- "Dataout/em_prep.txt"
 
 
 # PROCESS DATASET & CREATE ENHANCED MONITORING DATAFRAME -----------------------------------------------------------------------------------
-# 
+
 
 em_prep_base <- prep_submission %>%
   tidyr::pivot_longer(cols= !c(Site, DATIM_code, Month), names_to = "indicator", values_to = "value") %>% 
@@ -83,53 +94,57 @@ em_prep_base <- prep_submission %>%
   ) %>%
   tidyr::drop_na(indicator_2) %>%
   dplyr::select(-c(indicator)) %>%
-  dplyr::left_join(ajuda_site_map, c("DATIM_code" = "orgunituid")) %>%
-  dplyr::select(c(date = Month, 
-                  site = orgunit,
-                  orgunituid = DATIM_code,
-                  district = psnu, 
-                  province = snu,
+  dplyr::left_join(ajuda_site_map, c("DATIM_code" = "datim_uid")) %>%
+  dplyr::select(c(period = Month, 
+                  datim_uid = DATIM_code,
+                  sisma_uid,
+                  snu,
+                  psnu, 
+                  sitename,
+                  site_nid,
                   indicator = indicator_2,
                   sex, 
                   age, 
-                  agecoarse, 
-                  poptype, 
+                  age_coarse = agecoarse, 
+                  pop_type = poptype, 
                   value)) %>% 
   glimpse()
 
 em_prep <- em_prep_base %>% 
-  dplyr::group_by(date, site, orgunituid, district, province, indicator, sex, age, agecoarse, poptype) %>% 
+  dplyr::group_by(period, datim_uid, sisma_uid, snu, psnu, sitename, site_nid, indicator, sex, age, age_coarse, pop_type) %>% 
   summarize_at(vars(value), sum, na.rm = TRUE) %>% 
   tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
-  dplyr::left_join(ajuda_site_map) %>% 
-  dplyr::select(-c(latitude, longitude)) %>% 
   glimpse()
 
 
 #---- WRITE MONTHLY PrEP CSV TO DISK -----------------------
 
-readr::write_csv(
+
+readr::write_tsv(
   em_prep,
   {monthly_dataset})
 
+
 #---- DEFINE PATH AND SURVEY MONTHLY PrEP DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
-historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+historic_files <- dir({historic_files_path}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 
 #---- ROW BIND ALL HISTORIC FILES AND GENERATE OUTPUT (THIS OUTPUT IS INTENDED FOR USE WITH THE USAID MONTHLY AJUDA DASHBOARD) -----------------------
 
 prep_tidy_history <- historic_files %>%
-  map(~ read_csv(file.path(data_path, .))) %>%
+  map(~ read_tsv(file.path(historic_files_path, .))) %>%
   reduce(rbind) %>%
+  select(!c(sisma_uid, snu, psnu, sitename, site_nid)) %>% 
   left_join(ajuda_site_map) %>% 
-  rename(Site = `orgunit`) %>% 
-  mutate(date = dmy(date)) %>% 
-  select(-c(snu, psnu, Site)) %>% 
+  mutate(period = dmy(period)) %>% 
+  relocate(sisma_uid:longitude, .after = datim_uid) %>% 
   glimpse()
 
 #-----------------------------------------------------------------------------------
 # PRINT DATAFRAME TO DISK
+
 
 write_tsv(
   prep_tidy_history,
@@ -137,14 +152,14 @@ write_tsv(
 
 
 # GGPLOT VISUALS -----------------------------------------------------------------------------------
-# 
+
 
 em_prep_new <- prep_tidy_history %>% 
-  tidyr::drop_na(poptype) %>% 
-  dplyr::group_by(poptype, date) %>% 
+  tidyr::drop_na(pop_type) %>% 
+  dplyr::group_by(pop_type, period) %>% 
   summarize(PrEP_NEW_VERIFY = sum(PrEP_NEW_VERIFY))
 
-ggplot(em_prep_new, aes(date, PrEP_NEW_VERIFY, fill = poptype)) +
+ggplot(em_prep_new, aes(period, PrEP_NEW_VERIFY, fill = pop_type)) +
   geom_col() + 
   theme_fivethirtyeight() +
   theme(plot.title = element_text(size = 12, face = "bold"),
@@ -156,7 +171,7 @@ ggplot(em_prep_new, aes(date, PrEP_NEW_VERIFY, fill = poptype)) +
 
 
 # SUBSET DATAFRAME TO CREATE HFR SUBMISSION -----------------------------------------------------------------------------------
-# 
+
 
 hfr_prep <- em_prep_base %>%
   dplyr::rename(val = value) %>%
