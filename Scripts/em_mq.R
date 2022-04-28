@@ -22,14 +22,15 @@ final_compile <- "Dataout/em_mqcv.txt"
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 11.04.2022.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_12042022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/FGH_MAR_22_Monitoria Intensiva Template FY22_122021_Updated_April 08_2022.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
 
 historic_files_path <- "Dataout/MQ_CV/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
+
 
 
 # LOAD DATASETS -----------------------------------------------------------
