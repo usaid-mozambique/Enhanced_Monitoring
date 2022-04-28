@@ -215,6 +215,8 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
          ends_with("tude"),
          starts_with("support"),
          starts_with("his"),
+         sex,
+         age,
          starts_with("TX_")) %>% 
   glimpse()
 
@@ -225,6 +227,16 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
 readr::write_tsv(
   txtb_tidy_history_2,
   "Dataout/em_txtb.txt")
+
+
+
+
+
+
+
+
+
+
 
 
 
