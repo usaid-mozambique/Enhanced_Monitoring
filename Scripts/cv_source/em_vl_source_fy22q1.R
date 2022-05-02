@@ -13,16 +13,15 @@ library(filenamer)
 
 # SET PATHS & VALUES -----------------------------------------------------------
 
-period_value <- "2022-12-20"
+period_value <- "2021-12-20"
+quarterly_dataset <- ("Dataout/VL_source/_CompileHistoric/em_vl_source_fy21q1.txt") # UPDATE EACH QUARTER
 
-ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
-
-ariel <- "Data/Other/ARIEL_TX_PVLS_FY22Q1_Report Check.xlsx"
-fgh <- "Data/Other/FGH_TX_PVLS_FY22Q1_Report Check_20012022_v1.xlsx"
-icap <- "Data/Other/ICAP_TX_PVLS_FY22Q1_Report Check_20012022.xlsx"
-ccs <- "Data/Other/CCS_TX_PVLS_FY22Q1_Report Check.xlsx"
-egpaf <- "Data/Other/EGPAF_TX_PVLS_FY22Q1_Report Check (003).xlsx"
-echo <- "Data/Other/ECHO_TX_PVLS_FY22Q1_Report Check.xlsx"
+ARIEL <- "Data/Other/ARIEL_TX_PVLS_FY22Q1_Report Check.xlsx"
+FGH <- "Data/Other/FGH_TX_PVLS_FY22Q1_Report Check_20012022_v1.xlsx"
+ICAP <- "Data/Other/ICAP_TX_PVLS_FY22Q1_Report Check_20012022.xlsx"
+CCS <- "Data/Other/CCS_TX_PVLS_FY22Q1_Report Check.xlsx"
+EGPAF <- "Data/Other/EGPAF_TX_PVLS_FY22Q1_Report Check (003).xlsx"
+ECHO <- "Data/Other/ECHO_TX_PVLS_FY22Q1_Report Check.xlsx"
 
 
 # EXTRACT FUNCTION RESHAPE ---------------------------------------------
@@ -106,13 +105,13 @@ lab_reshape <- function(filename, ip){
            age = str_replace(age, "_", "-"),
            sex = case_when(group == "M" ~ "Male",
                            group == "F" ~ "Female"),
-           population = case_when(group == "MG" ~ "PW",
+           pop_subtype = case_when(group == "MG" ~ "PW",
                                   group == "Lac" ~ "LW"),
            keypop = case_when(group == "PWID" ~ "PWID",
                               group == "MSM" ~ "MSM",
                               group == "FSW" ~ "FSW",
                               group == "Prison" ~ "Prison"),
-           standarddisag = case_when(
+           pop_type = case_when(
              (group %in% c("M", "F")) ~ "Age/Sex",
              (group %in% c("Lac", "MG")) ~ "Pregnant/Breastfeeding",
              TRUE ~ "KeyPop"),
@@ -200,13 +199,13 @@ lab_reshape <- function(filename, ip){
            age = str_replace(age, "_", "-"),
            sex = case_when(group == "M" ~ "Male",
                            group == "F" ~ "Female"),
-           population = case_when(group == "MG" ~ "PW",
+           pop_subtype = case_when(group == "MG" ~ "PW",
                                   group == "Lac" ~ "LW"),
            keypop = case_when(group == "PWID" ~ "PWID",
                               group == "MSM" ~ "MSM",
                               group == "FSW" ~ "FSW",
                               group == "Prison" ~ "Prison"),
-           standarddisag = case_when(
+           pop_type = case_when(
              (group %in% c("M", "F")) ~ "Age/Sex",
              (group %in% c("Lac", "MG")) ~ "Pregnant/Breastfeeding",
              TRUE ~ "KeyPop"),
@@ -219,6 +218,43 @@ lab_reshape <- function(filename, ip){
   bind_rows(df_1, df_2)
   
 }
+
+# PROCESS IP SUBMISSIONS --------------------------------------------------
+
+
+df_ariel <- lab_reshape(ARIEL, "ARIEL")
+df_fgh <- lab_reshape(FGH, "FGH")
+df_icap <- lab_reshape(ICAP, "ICAP")
+df_ccs <- lab_reshape(CCS, "CCS")
+df_egpaf <- lab_reshape(EGPAF, "EGPAF")
+df_echo <- lab_reshape(ECHO, "ECHO")
+
+
+# JOIN METADATA -----------------------------------------------------------
+
+
+df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo)
+
+
+# PRINT OUTPUT TO DISK ------------------------------------------------------
+
+readr::write_tsv(
+  df,
+  {quarterly_dataset},
+  na ="")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # LOAD METADATA -----------------------------------------------------------
@@ -245,22 +281,7 @@ ajuda_meta <- read_excel(ajuda_path) %>%
 
 
 
-# PROCESS IP SUBMISSIONS --------------------------------------------------
-
-
-df_ariel <- lab_reshape(ariel, "ARIEL")
-df_fgh <- lab_reshape(fgh, "FGH")
-df_icap <- lab_reshape(icap, "ICAP")
-df_ccs <- lab_reshape(ccs, "CCS")
-df_egpaf <- lab_reshape(egpaf, "EGPAF")
-df_echo <- lab_reshape(echo, "ECHO")
-
-
-# JOIN METADATA -----------------------------------------------------------
-
-
-df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%  
-  left_join(ajuda_meta, by = c("DATIM_code" = "datim_uid")) %>% 
+left_join(ajuda_meta, by = c("DATIM_code" = "datim_uid")) %>% 
   select(-c(Partner, Province, District, `Health Facility`)) %>% 
   select(datim_uid = DATIM_code,
          sisma_uid,
@@ -273,18 +294,10 @@ df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%
          motive,
          age,
          sex,
-         population,
+         pop_type,
+         pop_subtype,
          keypop,
-         standarddisag,
          source,
          TX_PVLS_D,
          TX_PVLS_N) %>% 
   glimpse()
-
-
-# PRINT OUTPUT TO DISK ------------------------------------------------------
-
-readr::write_tsv(
-  df,
-  "Dataout/em_vl_source.txt",
-  na ="")

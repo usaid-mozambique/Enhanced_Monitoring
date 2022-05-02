@@ -12,32 +12,44 @@ rm(list = ls())
 
 # SET PATHS & VALUES -----------------------------------------------------------
 
-period <- "2021-12-20"
 
-ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
-
-ariel <- "Data/MISAU/KP/FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2 (1).xlsx"
-fgh <- "Data/MISAU/KP/FGH_FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
-icap <- "Data/MISAU/KP/ICAP_FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2_20012022.xlsx"
-ccs <- "Data/MISAU/KP/FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
-egpaf <- "Data/MISAU/KP/EGPAF_FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2 (003)_19 01 2022.xlsx"
-echo <- "Data/MISAU/KP/ECHO_FY22_Q1_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
+period <- "2022-03-20" # UPDATE EACH QUARTER
+quarterly_dataset <- ("Dataout/KP_MISAU/_CompileHistoric/misau_kp_fy22q2.txt") # UPDATE EACH QUARTER
 
 
-# LOAD DATASETS -----------------------------------------------------------
+ARIEL <- "Data/MISAU/KP/ARIEL FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2_21.04.22.xlsx"
+FGH <- "Data/MISAU/KP/FGH FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2_22042022.xlsx"
+ICAP <- "Data/MISAU/KP/ICAP_FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
+CCS <- "Data/MISAU/KP/CCS FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
+EGPAF <- "Data/MISAU/KP/EGPAF FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
+# ECHO <- "Data/MISAU/KP/"
+DOD <- "Data/MISAU/KP/DOD FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
+
+historic_files_path <- "Dataout/KP_MISAU/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
 
-ajuda_meta <- read_excel(ajuda_path) %>% 
-  select(
-    snu = SNU,
-    psnu = Psnu,
-    site = Sitename,
-    orgunituid,
-    sisma_id,
-    latitude = Lat,
-    longitude = Long,
-    clinical_ip = `IP FY20`
-  )
+# LOAD METADATA -----------------------------------------------------------
+
+
+ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+  select(sisma_uid = sisma_id,
+         datim_uid =  orgunituid,
+         site_nid,
+         partner = `IP FY20`,
+         snu = SNU,
+         psnu = Psnu,
+         sitename = Sitename,
+         his_epts = epts,
+         his_emr = emr,
+         his_idart = idart,
+         his_disa = disa,
+         support_ovc = ovc,
+         support_ycm = ycm,
+         ovc,
+         ycm,
+         latitude = Lat,
+         longitude = Long)
+
 
 
 # EXTRACT FUNCTION RESHAPE ---------------------------------------------
@@ -46,7 +58,7 @@ ajuda_meta <- read_excel(ajuda_path) %>%
 kp_reshape <- function(filename, ip){
 
   df <- read_excel(filename, sheet = "POP CHAVES - Trimestre", skip = 9) %>% 
-    select(-c(No, SISMA_code, Type, Data, ...256)) %>% 
+    select(-c(No, SISMA_code, Data, Column1)) %>% 
     pivot_longer(TX_New_KP_total:`TX_PVLS_Num_6meses_REC&MTS_25+`, 
                  names_to = "temp",
                  values_to = "value") %>% 
@@ -93,26 +105,33 @@ kp_reshape <- function(filename, ip){
 # PROCESS IP SUBMISSIONS --------------------------------------------------
 
 
-df_ariel <- kp_reshape(ariel, "ARIEL")
-df_fgh <- kp_reshape(fgh, "FGH")
-df_icap <- kp_reshape(icap, "ICAP")
-df_ccs <- kp_reshape(ccs, "CCS")
-df_egpaf <- kp_reshape(egpaf, "EGPAF")
-df_echo <- kp_reshape(echo, "ECHO")
+df_ariel <- kp_reshape(ARIEL, "ARIEL")
+df_fgh <- kp_reshape(FGH, "FGH")
+df_icap <- kp_reshape(ICAP, "ICAP")
+df_ccs <- kp_reshape(CCS, "CCS")
+df_egpaf <- kp_reshape(EGPAF, "EGPAF")
+# df_echo <- kp_reshape(ECHO, "ECHO")
+df_dod <- kp_reshape(DOD, "JHPIEGO-DoD")
 
 
 # JOIN METADATA -----------------------------------------------------------
 
 
-df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%  
-  left_join(ajuda_meta, by = c("DATIM_code" = "orgunituid")) %>% 
+df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_dod) %>%  
   mutate(date = {period},
-         population = case_when(keypop == "All (KP & non-KP)" ~ "General",
+         pop_type = case_when(keypop == "All (KP & non-KP)" ~ "General",
                                 TRUE ~ "Key Pop"),
          keypop = case_when(keypop == "All (KP & non-KP)" ~ "",
                             TRUE ~ keypop)) %>% 
-  select(-c(Partner, Province, District, `Health Facility`, temp)) %>% 
-  relocate(date, clinical_ip, snu, psnu, site, orgunituid = DATIM_code, sisma_id, latitude, longitude, population, everything()) %>% 
+  select(Province,
+         District,
+         `Health Facility`,
+         DATIM_code,
+         pop_type,
+         keypop,
+         age,
+         period = date,
+         starts_with("TX_")) %>% 
   glimpse()
 
 
@@ -121,6 +140,82 @@ df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo) %>%
 
 readr::write_tsv(
   df,
-  "Dataout/misau_kp_fy22.txt",
-  na ="")
+  {quarterly_dataset})
+
+
+#---- SURVEY ALL MONTHLY TXTB DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
+
+historic_files <- dir({historic_files_path}, pattern = "*.txt")
+
+misau_kp_tidy_history <- historic_files %>%
+  map(~ read_tsv(file.path(historic_files_path, .))) %>%
+  reduce(rbind)
+
+
+#---- LOAD & ALIGN HISTORICAL DATASET PRIOR TO FY22 ---------------------------------
+
+misau_kp_tidy_history_2 <- read_delim("Dataout/KP_MISAU/_CompileHistoric/old/misau_kp_fy20fy21.txt", 
+                                delim = "\t", escape_double = FALSE, 
+                                col_types = cols(age = col_character(),
+                                                 TX_NEW_6MO = col_double(),
+                                                 TX_CURR_6MO = col_double(),
+                                                 TX_PVLS_D_6MO = col_double(),
+                                                 TX_PVLS_N_6MO = col_double()), 
+                                  
+                                trim_ws = TRUE) %>% 
+  glimpse()
+
+
+misau_kp_tidy_history_3 <- bind_rows(misau_kp_tidy_history, misau_kp_tidy_history_2)
+
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+
+
+volumn_period <- misau_kp_tidy_history_3 %>% 
+  select(DATIM_code, period, TX_CURR) %>%
+  filter(period == max(period)) %>% 
+  group_by(DATIM_code, .drop = TRUE) %>% 
+  summarize(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>%
+  mutate(site_volume = case_when(
+    TX_CURR < 1000 ~ "Low",
+    between(TX_CURR, 1000, 5000) ~ "Medium",
+    TX_CURR > 5000 ~ "High",
+    TRUE ~ "Not Reported")) %>% 
+  select(datim_uid = DATIM_code, 
+         site_volume) %>% 
+  glimpse()
+
+
+#---- JOIN AJUDA SITEMAP AND CLEAN DATAFRAME -----------------------
+
+
+misau_kp_tidy_history_4 <- misau_kp_tidy_history_3 %>%
+  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
+  left_join(volumn_period, by = c("DATIM_code" = "datim_uid")) %>% 
+  select(datim_uid = DATIM_code,
+         sisma_uid,
+         site_nid,
+         period,
+         partner,
+         snu,
+         psnu,
+         sitename,
+         site_volume,
+         ends_with("tude"),
+         starts_with("support"),
+         starts_with("his"),
+         pop_type,
+         keypop,
+         age,
+         starts_with("TX_")) %>% 
+  glimpse()
+
+
+# PRINT FINAL OUTPUT TO DISK ----------------------------------------------
+
+
+readr::write_tsv(
+  misau_kp_tidy_history_4,
+  "Dataout/em_kp_misau.txt")
 
