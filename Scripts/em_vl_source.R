@@ -22,7 +22,7 @@ FGH <- "Data/Other/FGH TX_PVLS_FY22Q2_Report Check_22042022.xlsx"
 ICAP <- "Data/Other/ICAP_2022_TX_PVLS_FY22Q2_Report Check.xlsx"
 CCS <- "Data/Other/CCS TX_PVLS_FY22Q2_Report Check.xlsx"
 EGPAF <- "Data/Other/EGPAF TX_PVLS_FY22Q2_Report Check 2022.xlsx"
-# ECHO <- "Data/Other/ECHO_TX_PVLS_FY22Q1_Report Check.xlsx"
+ECHO <- "Data/Other/ECHO_TX_PVLS_FY22Q2_Report Check_V2.xlsx"
 DOD <- "Data/Other/DOD TX_PVLS_FY22Q2_Report Check.xlsx"
 
 historic_files_path <- "Dataout/VL_source/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
@@ -257,13 +257,13 @@ df_fgh <- lab_reshape(FGH, "FGH")
 df_icap <- lab_reshape(ICAP, "ICAP")
 df_ccs <- lab_reshape(CCS, "CCS")
 df_egpaf <- lab_reshape(EGPAF, "EGPAF")
-# df_echo <- lab_reshape(ECHO, "ECHO")
+df_echo <- lab_reshape(ECHO, "ECHO")
 df_dod <- lab_reshape(DOD, "JHPIEGO-DoD")
 
 # JOIN METADATA -----------------------------------------------------------
 
 
-df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_dod) %>% # UPDATE WITH ECHO!!!
+df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo, df_dod) %>% # UPDATE WITH ECHO!!!
   select(!c(`Reporting period`, `reporting period`, Column1))
 
 
@@ -317,4 +317,4 @@ vl_source_tidy_history_1 <- vl_source_tidy_history %>%
 
 readr::write_tsv(
   vl_source_tidy_history_1,
-  "Dataout/em_vl_source_new.txt")
+  "Dataout/em_vl_source.txt")

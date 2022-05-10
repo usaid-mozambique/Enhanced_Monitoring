@@ -17,16 +17,16 @@ rm(list = ls())
 # DEFINE MONTH AND PATHS ---------------------------
 
 
-month <- "20/03/2022" # UPDATE EACH MONTH
-monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_03.csv") # UPDATE EACH MONTH
+month <- "20/04/2022" # UPDATE EACH MONTH
+monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_04.csv") # UPDATE EACH MONTH
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/DOD__April_2022final 20042022 DOD Jhpiego New Template.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ARIEL Monitoria Intensiva and DSD Template_FY22_April 2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/CCS_Monitoria Intensiva_ Template_FY22Abril.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_APR_ECHO_V2.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Abril_2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_April_05052022.xlsx"
 
 historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
@@ -254,7 +254,7 @@ tbl <- tpt_tidy_history_2 %>%
   gt(rowname_col = "indicator") %>% 
   
   fmt_number(
-    columns = 2:14, 
+    columns = 2:15, 
     rows = everything(),
     sep_mark = ",",
     decimals = 0) %>% 

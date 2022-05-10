@@ -17,17 +17,17 @@ rm(list = ls())
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
 
-period <- "2022-02-20"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Fevereiro_2022.xlsx"
-file_output <- "Dataout/DISA/monthly_processed/2022_02.txt"
+period <- "2022-03-20"
+file_output <- "Dataout/DISA/monthly_processed/2022_03.txt"
 
+file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Março 2022.xlsx"
 historic_files_path <- "Dataout/DISA/monthly_processed/"
 file_output_historic <- "Dataout/em_disa.txt"
 
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_MAR172022.xlsx") %>%
+disa_datim_map <- read_excel("Documents/disa_datim_map_MAIO102022.xlsx") %>%
   select(DISA_ID, 
          sisma_uid = `SISMA DHIS2`, 
          datim_uid, 
@@ -38,7 +38,7 @@ datim_ou_map <- read_excel("Documents/tx_site_reference.xlsx")
 # DISA BY AGE
 xAge <- read_excel({file_input}, 
                    sheet = "Age & Sex", 
-                   col_types = c("text", "text", "text", 
+                   col_types = c("text", "text", "text", "text",
                                  "text", "text", "text", "text", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
@@ -51,7 +51,7 @@ xAge <- read_excel({file_input},
 # DISA PREGNANT WOMEN
 xPW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Gravidas)",
-                  col_types = c("text", "text",
+                  col_types = c("text", "text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -59,15 +59,15 @@ xPW <- read_excel({file_input},
                                 "numeric"), 
                   skip = 2) %>% 
   mutate(group = "PW") %>% 
-  rename(US = HF,
-         PROVINCIA = PROVINCE,
-         DISTRITO = DISTRICT) %>% 
+  rename(US = US,
+         PROVINCIA = PROVINCIA,
+         DISTRITO = DISTRITO) %>% 
   glimpse
 
 # DISA LACTATING WOMEN
 xLW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Lactantes)",
-                  col_types = c("text", "text",
+                  col_types = c("text", "text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -75,14 +75,14 @@ xLW <- read_excel({file_input},
                                 "numeric"),
                   skip = 2) %>% 
   mutate(group = "LW") %>%
-  rename(US = HF,
-         PROVINCIA = PROVINCE,
-         DISTRITO = DISTRICT) %>% 
+  rename(US = US,
+         PROVINCIA = PROVINCIA,
+         DISTRITO = DISTRITO) %>% 
   glimpse
 
 # DISA TURN AROUND TIME
 df_tat <- read_excel({file_input}, 
-                     sheet = "TRL", col_types = c("text", "text",
+                     sheet = "TRL", col_types = c("text", "text", "text",
                                                   "text", "text", "text", "numeric", 
                                                   "numeric", "numeric", "numeric", 
                                                   "numeric"), 
@@ -99,12 +99,12 @@ rm(xAge, xPW, xLW)
 df_vl <- df_vl %>% 
   select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
   rename(site_nid = `SISMA ID`,
-         disa_uid = DISA_ID,
+         disa_uid = `DISA ID`,
          snu = PROVINCIA,
          psnu = DISTRITO,
          sitename = US,
-         age = Age,
-         sex = Sex) %>% 
+         age = Idade,
+         sex = Sexo) %>% 
   relocate(c(group), .before = sitename) %>% 
   pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
   mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
@@ -150,7 +150,7 @@ mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
 
 df_tat <- df_tat %>% 
   rename(site_nid = `SISMA ID`,
-         disa_uid = DISA_ID,
+         disa_uid = `DISA ID`,
          snu = PROVINCIA,
          psnu = DISTRITO,
          sitename = US) %>% 
@@ -289,7 +289,7 @@ df_vl_plot %>%
 
 
 write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl_feb22.xlsx"},
+           {"Dataout/DISA/missing_sites_mfl_mar22.xlsx"},
            overwrite = TRUE)
 
 

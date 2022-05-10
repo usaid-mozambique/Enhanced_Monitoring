@@ -22,7 +22,7 @@ FGH <- "Data/MISAU/KP/FGH FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2_2204
 ICAP <- "Data/MISAU/KP/ICAP_FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
 CCS <- "Data/MISAU/KP/CCS FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
 EGPAF <- "Data/MISAU/KP/EGPAF FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
-# ECHO <- "Data/MISAU/KP/"
+ECHO <- "Data/MISAU/KP/ECHO FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
 DOD <- "Data/MISAU/KP/DOD FY22_Q2_TemplateReltrimestral_PopChave_MISAU_v2.2.xlsx"
 
 historic_files_path <- "Dataout/KP_MISAU/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
@@ -110,14 +110,14 @@ df_fgh <- kp_reshape(FGH, "FGH")
 df_icap <- kp_reshape(ICAP, "ICAP")
 df_ccs <- kp_reshape(CCS, "CCS")
 df_egpaf <- kp_reshape(EGPAF, "EGPAF")
-# df_echo <- kp_reshape(ECHO, "ECHO")
+df_echo <- kp_reshape(ECHO, "ECHO")
 df_dod <- kp_reshape(DOD, "JHPIEGO-DoD")
 
 
 # JOIN METADATA -----------------------------------------------------------
 
 
-df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_dod) %>%  
+df <- bind_rows(df_ariel, df_fgh, df_icap, df_ccs, df_egpaf, df_echo, df_dod) %>%  
   mutate(date = {period},
          pop_type = case_when(keypop == "All (KP & non-KP)" ~ "General",
                                 TRUE ~ "Key Pop"),
@@ -166,6 +166,19 @@ misau_kp_tidy_history_2 <- read_delim("Dataout/KP_MISAU/_CompileHistoric/old/mis
                                 trim_ws = TRUE) %>% 
   glimpse()
 
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="d3aFvsvQ7O2"]<-"Nv5WX50ktwr"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="GsYcZ9h9BUK"]<-"Z6ZZLw50mAM"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="GY2vnTIADh1"]<-"kKsL2QkNR4K"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="JCaOI2EWde3"]<-"p9u7nMWHEgF"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="rsZpZwTAPq1"]<-"DVF2BNdSzV9"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="S6gaiIWGmh9"]<-"fuVClko8HKS"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="Sqry0ikIChZ"]<-"aUMEQzUKI0K"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="U7iWzT5xo5X"]<-"NJKcpotvrAQ"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="VE6gqvIqNNU"]<-"kny7mdXnSEx"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="XOhxRL9w3Jt"]<-"wgqFTVU7Iky"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="xpFEJzy6IXt"]<-"VSHfWQyhzUu"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$DATIM_code=="Y9W059tBM50"]<-"yJ014QFEqru"
+misau_kp_tidy_history_2$DATIM_code[misau_kp_tidy_history_2$`Health Facility`=="Chimonzo CS"]<-"R8hdPUSeX0B"
 
 misau_kp_tidy_history_3 <- bind_rows(misau_kp_tidy_history, misau_kp_tidy_history_2)
 

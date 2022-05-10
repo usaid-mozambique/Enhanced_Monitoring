@@ -24,7 +24,7 @@ monthly_dataset <- ("Dataout/TXTB/_CompileHistoric/TXTB_2022_03.txt") # UPDATE E
 DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
 ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_ECHO.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
 ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
@@ -146,18 +146,18 @@ txtb_reshape <- function(filename, ip){
 
 
 dod <- txtb_reshape(DOD, "JHPIEGO-DoD")
-# echo <- txtb_reshape(ECHO, "ECHO")
+echo <- txtb_reshape(ECHO, "ECHO")
 ariel <- txtb_reshape(ARIEL, "ARIEL")
 ccs <- txtb_reshape(CCS, "CCS")
 egpaf <- txtb_reshape(EGPAF, "EGPAF")
-# fgh <- txtb_reshape(FGH, "FGH")
+fgh <- txtb_reshape(FGH, "FGH")
 icap <- txtb_reshape(ICAP, "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 
-txtb <- bind_rows(dod, ariel, ccs, egpaf, icap)
+txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
 
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
@@ -231,12 +231,46 @@ readr::write_tsv(
 
 
 
+# GT TABLES ---------------------------------------------------------------
 
 
+tbl <- txtb_tidy_history_2 %>%
+  pivot_longer(cols = TX_CURR:TX_TB_CURR_N, names_to = "indicator", values_to = "value") %>% 
+  select(indicator, period, value) %>% 
+  arrange((period)) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format = "%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = 2:3, 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(200),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique TX_TB Enhanced Monitoring") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
 
 
-
-
-
-
+tbl
 
