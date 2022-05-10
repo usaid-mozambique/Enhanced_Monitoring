@@ -154,12 +154,16 @@ fgh <- txtb_reshape(FGH, "FGH")
 icap <- txtb_reshape(ICAP, "ICAP")
 
 
-# COMPILE IP SUMBISSIONS --------------------------------------------------
+# COMPILE IP SUMBISSIONS & CHECK FOR NA'S IN SITE DATIMUIDS --------------------------------------------------
 
 
 txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
 
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
+
+txtb %>% 
+  filter(is.na(datim_uid)) %>% 
+  distinct(datim_uid, snu1, psnu, sitename)
 
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
@@ -197,7 +201,7 @@ volumn_period <- txtb_tidy_history %>%
   glimpse()
 
 
-#---- JOIN AJUDA SITEMAP AND CLEAN DATAFRAME -----------------------
+#---- JOIN AJUDA SITEMAP, CLEAN DATAFRAME & CHECK FOR NA'S IN SITE DATIMUIDS -----------------------
 
 
 txtb_tidy_history_2 <- txtb_tidy_history %>%
@@ -219,6 +223,11 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
          age,
          starts_with("TX_")) %>% 
   glimpse()
+
+
+txtb_tidy_history_2 %>% 
+  filter(is.na(datim_uid)) %>% 
+  distinct(datim_uid, snu, psnu, sitename)
 
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------
