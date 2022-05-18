@@ -15,19 +15,19 @@ library(glue)
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
 
-month <- "2022-03-20" # UPDATE EVERY MONTH
-monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_03.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+month <- "2022-04-20" # UPDATE EVERY MONTH
+monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_04.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
 final_compile <- "Dataout/em_mqcv.txt"
 
 ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_Marco_2022_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/DOD__April_2022final 20042022 DOD Jhpiego New Template.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ARIEL Monitoria Intensiva and DSD Template_FY22_April 2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/CCS_Monitoria Intensiva_ Template_FY22Abril.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_APR_ECHO_V2.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Abril_2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_April_05052022.xlsx"
 
 historic_files_path <- "Dataout/MQ_CV/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
 
@@ -321,14 +321,14 @@ egpaf <- cv_tidy(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
-cv_tidy <- dplyr::bind_rows(echo, fgh, ariel, icap, ccs, egpaf)
+cv_tidy <- dplyr::bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
 
 cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
   group_by(Partner) %>% 
   distinct(DATIM_code) %>% 
   summarise(n())
 
-rm(echo, fgh, ariel, icap, ccs, egpaf)
+rm(echo, fgh, ariel, icap, ccs, egpaf, dod)
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
@@ -337,6 +337,7 @@ readr::write_tsv(
   cv_tidy,
   na = "",
   {monthly_dataset})
+
 
 #---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
@@ -347,6 +348,7 @@ historic_import <- historic_files %>%
   map(~ read_tsv(file.path(historic_files_path, .))) %>%
   reduce(rbind) %>% 
   mutate(month = as.Date(month, "%Y/%m/%d")) 
+
 
 #---- JOIN METADATA ---------------------------------
 
@@ -365,6 +367,7 @@ cv_tidy_historic <- historic_import %>%
   relocate(period:partner, .after = sisma_nid) %>%
   pivot_wider(names_from =  indicator, values_from = value) %>%
   glimpse()
+
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------
 

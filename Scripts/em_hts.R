@@ -16,8 +16,8 @@ library(ggthemes)
 
 # DEFINE HFR MONTH --------------------------------------------------------
 
-hfr_month <- "2021-11-01"
-hfr_month_var <- "01/11/2021"
+hfr_month <- "2022-02-01"
+hfr_month_var <- "01/02/2022"
 
 
 ## KEY SISMA SEARCH WORD(S) "ano"

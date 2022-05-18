@@ -254,7 +254,7 @@ tbl <- tpt_tidy_history_2 %>%
   gt(rowname_col = "indicator") %>% 
   
   fmt_number(
-    columns = 2:15, 
+    columns = !c(indicator), 
     rows = everything(),
     sep_mark = ",",
     decimals = 0) %>% 

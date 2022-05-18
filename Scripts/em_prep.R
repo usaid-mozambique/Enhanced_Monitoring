@@ -16,9 +16,9 @@ library(ggthemes)
 # DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 
 
-month <- "01/06/2021" # UPDATE
-monthly_dataset <- "Dataout/PrEP/_CompileHistoric/PrEP_2021_06.txt" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/ECHO_Manica_PrEP_Monthly Report_Jun_2021.xlsx"
+month <- "01/04/2022" # UPDATE
+monthly_dataset <- "Dataout/PrEP/_CompileHistoric/PrEP_2022_04.txt" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/PrEP_Monthly Report_APRIL_2022_V2_ECHO.xlsx"
 
 #date_open <- "2021-07-01" # ONLY NEEDED FOR CIRG
 #date_close <- "2021-09-01" # ONLY NEEDED FOR CIRG
@@ -182,7 +182,7 @@ hfr_prep <- em_prep_base %>%
                 indicator= dplyr::recode(indicator, "PrEP_NEW_VERIFY" = "PrEP_NEW")) %>%
   dplyr::filter(!is.na(age),
                 indicator == "PrEP_NEW",
-                date == as.Date(month)) %>% 
+                date == as.Date(period)) %>% 
   dplyr::select(c(date, 
                   orgunit = site, 
                   orgunituid, 

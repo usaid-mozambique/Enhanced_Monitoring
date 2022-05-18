@@ -221,6 +221,7 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
          starts_with("his"),
          sex,
          age,
+         disaggregate,
          starts_with("TX_")) %>% 
   glimpse()
 
@@ -255,7 +256,7 @@ tbl <- txtb_tidy_history_2 %>%
   gt(rowname_col = "indicator") %>% 
   
   fmt_number(
-    columns = 2:3, 
+    columns = !c(indicator), 
     rows = everything(),
     sep_mark = ",",
     decimals = 0) %>% 

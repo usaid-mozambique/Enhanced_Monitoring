@@ -36,15 +36,15 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
          longitude = Long)
 
 
-df0 <- read_tsv("Data/Ajuda/ERDSD/AJUDA_transformed_historic.txt") %>% 
+df0 <- read_tsv("Data/Ajuda/ERDSD/AJUDA_transformed.txt") %>% 
   mutate(Months = as.Date(Months, "%d/%m/%Y"))
 
 
-df1 <- read_csv("Data/Ajuda/ERDSD/AJUDA_transformed_Mar22.txt") %>% 
-  select(!c(`...1`, id)) %>% 
-  rename(Health.Facility = `Health Facility`)
-
-df2 <- bind_rows(df1, df0)
+# df1 <- read_csv("Data/Ajuda/ERDSD/AJUDA_transformed_Mar22.txt") %>% 
+#   select(!c(`...1`, id)) %>% 
+#   rename(Health.Facility = `Health Facility`)
+# 
+# df2 <- bind_rows(df1, df0)
 
 
 #-------------------------------------------------------------------  ----------------
