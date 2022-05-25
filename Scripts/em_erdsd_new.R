@@ -102,8 +102,7 @@ erdsd_reshape <- function(filename, ip){
            numdenom,
            er_status,
            dsd_eligibility,
-           value) %>% 
-    drop_na(value)
+           value)
   
   tx_curr_prev <- df %>%
     filter(indicator == "TX_CURR") %>% 
@@ -133,9 +132,10 @@ dod <- erdsd_reshape(DOD, "JHPIEGO-DoD")
 # COMPILE SUMBISSIONS --------------------------------------------------
 
 
-er_dsd <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
+er_dsd <- bind_rows(echo, dod, ariel, ccs, egpaf, fgh, icap)
 
-rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
+er_dsd <- bind_rows(echo)
+# rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 
 # IDENTIFY ERRORS COMMON IN MONTHLY SUBMISSION --------------------------------------------------
@@ -144,6 +144,13 @@ rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 check_missing_datim_uid <- er_dsd %>% 
   anti_join(ajuda_site_map, by = "datim_uid") %>% 
   distinct(partner, snu, psnu, sitename, datim_uid)
+
+
+totals <- er_dsd %>% 
+  count(indicator,
+        wt = value,
+        name = "total")
+  
 
 
 # WRITE MONTHLY CSV TO DISK ------------------------------------

@@ -25,7 +25,7 @@ ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ARIEL Monitoria Intensiva and DSD Tem
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/CCS_Monitoria Intensiva_ Template_FY22Abril.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_APR_ECHO_V2.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Abril_2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3_updated11052022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_April_05052022.xlsx"
 
 historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
@@ -281,5 +281,30 @@ tbl <- tpt_tidy_history_2 %>%
   
 
 tbl
+
+
+
+# OUTPUT DATASET FOR SIMS PRIOTIZATION ------------------------------------
+
+
+sims_indicator <- tpt_tidy_history_2 %>% 
+  filter(indicator %in% c("TPT Completed/Active", "TX_CURR"),
+         period == max(period),
+         partner == "ECHO") %>% 
+  pivot_wider(names_from = indicator, values_from = value) %>% 
+  group_by(period, datim_uid, snu, psnu, sitename) %>% 
+  summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE),
+            TPT_CUM = sum(`TPT Completed/Active`, na.rm = TRUE)) %>% 
+  mutate(TPT_CUM_PER = TPT_CUM / TX_CURR) %>% 
+  ungroup() %>% 
+  select(snu, 
+         psnu, 
+         sitename,
+         orgunituid = datim_uid,
+         TPT_CUM_PER)
+
+readr::write_tsv(
+  sims_indicator,
+  "~/GitHub/SIMS/Dataout/tpt_comp.txt")
   
   
