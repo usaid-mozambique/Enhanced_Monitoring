@@ -1,40 +1,49 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
+rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
 
 
 library(tidyverse)
-library(lubridate)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
 library(gt)
-
-rm(list = ls())
-
-
-# DEFINE MONTH AND PATHS ---------------------------
+load_secrets() 
 
 
-month <- "20/04/2022" # UPDATE EACH MONTH
-monthly_dataset <- ("Dataout/TPT/_CompileHistoric/TPT_2022_04.csv") # UPDATE EACH MONTH
+# DEFINE VALUES AND PATHS ---------------------------
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/DOD__April_2022final 20042022 DOD Jhpiego New Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ARIEL Monitoria Intensiva and DSD Template_FY22_April 2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/CCS_Monitoria Intensiva_ Template_FY22Abril.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_APR_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Abril_2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3_updated11052022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_April_05052022.xlsx"
+# update each month
+month <- "20/06/2022" 
+file <- "TPT_2022_06"
 
-historic_files_path <- "Dataout/TPT/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
+# update each month
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
+# do not update each month
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+path_monthly_output_repo <- "Dataout/TPT/_CompileHistoric/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "csv") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_tpt.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 # LOAD METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,
@@ -57,16 +66,9 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
 # CREATE FUNCTION TPT RESHAPE ---------------------------------------------
 
 
-
 tpt_reshape <- function(filename, ip){
   
   df <- read_excel(filename, sheet = "TPT Completion", 
-                   # col_types = c("numeric", 
-                   #               "text", "text", "text", "text", "text", 
-                   #               "numeric", "numeric", "text", "numeric", 
-                   #               "numeric", "numeric", "numeric", 
-                   #               "numeric", "numeric", "numeric", 
-                   #               "numeric"),
                    col_types = c("numeric", 
                                  "text", "text", "text", "text", "text", 
                                  "numeric", "text", "numeric", "numeric", 
@@ -95,7 +97,6 @@ tpt_reshape <- function(filename, ip){
 }
 
 
-
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
 
@@ -112,7 +113,6 @@ icap <- tpt_reshape(ICAP, "ICAP")
 
 
 tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
-
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 
@@ -142,53 +142,36 @@ tpt_tidy <- tpt %>%
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
-
+# write to local
 readr::write_csv(
   tpt_tidy,
-  {monthly_dataset})
+  {path_monthly_output_file})
+
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.csv'))
 
 
-#---- OPTION 1: SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+#---- SURVEY AND COMBINE ALL MONTHLY TPT DATASETS TO BUILD HISTORIC DATASET ---------------------------------
 
 
-historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 chr_files <- historic_files[historic_files %in% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
 non_chr_files <- historic_files[historic_files %ni% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
 
 temp_chr_files <- chr_files %>%
-  map(~ read_csv(file.path(historic_files_path, .))) %>%
+  map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
 temp_non_chr_files <- non_chr_files %>%
-  map(~ read_csv(file.path(historic_files_path, .))) %>%
+  map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
 tpt_tidy_history <- bind_rows(temp_non_chr_files, temp_chr_files)
-
-
-
-#---- OPTION 2: CREATE FUNCTION AND IMPORT ALL HISTORICAL FILES CREATING THEM WITH UNIFORM DATE CLASS ---------------------------------
-
-# 
-# df1 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_03.csv", col_types = cols(.default = "c", value = "d"))
-# df2 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_04.csv", col_types = cols(.default = "c", value = "d"))
-# df3 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_05.csv", col_types = cols(.default = "c", value = "d"))
-# df4 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_06.csv", col_types = cols(.default = "c", value = "d"))
-# df5 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_07.csv", col_types = cols(.default = "c", value = "d"))
-# df6 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_08.csv", col_types = cols(.default = "c", value = "d"))
-# df7 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_09.csv", col_types = cols(.default = "c", value = "d"))
-# df8 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_10.csv", col_types = cols(.default = "c", value = "d"))
-# df9 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_11.csv", col_types = cols(.default = "c", value = "d"))
-# df10 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2021_12.csv", col_types = cols(.default = "c", value = "d"))
-# df11 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_01.csv", col_types = cols(.default = "c", value = "d"))
-# df12 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_02.csv", col_types = cols(.default = "c", value = "d"))
-# df13 <- read_csv("Dataout/TPT/_CompileHistoric/TPT_2022_03.csv", col_types = cols(.default = "c", value = "d"))
-# 
-# tpt_tidy_history <- bind_rows(df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13) %>% 
-#   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
@@ -232,12 +215,16 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
   glimpse()
 
 
-# PRINT FINAL OUTPUT TO DISK ----------------------------------------------
+# WRITE FINAL OUTPUT TO DISK ----------------------------------------------
 
-
+# write to local
 readr::write_tsv(
   tpt_tidy_history_2,
   "Dataout/em_tpt.txt")
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
 
 # GT TABLES ---------------------------------------------------------------
@@ -281,7 +268,6 @@ tbl <- tpt_tidy_history_2 %>%
   
 
 tbl
-
 
 
 # OUTPUT DATASET FOR SIMS PRIOTIZATION ------------------------------------

@@ -1,42 +1,50 @@
-
 rm(list = ls())
 
-# LOAD DEPENDENCIES -------------------------------------------------------
+# DEPENDENCIES ------------------------------------------------------------
 
 
 library(tidyverse)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
-
+library(gt)
+load_secrets() 
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
+month <- "2022-06-20"
+# month <- "20/06/2022" 
+file <- "MQ_2022_06"
 
-month <- "2022-04-20" # UPDATE EVERY MONTH
-monthly_dataset <- ("Dataout/MQ_CV/_CompileHistoric/CV_2022_04.txt") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-final_compile <- "Dataout/em_mqcv.txt"
 
-ajuda_path <- "~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx"
+# do not update each month
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/DOD__April_2022final 20042022 DOD Jhpiego New Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ARIEL Monitoria Intensiva and DSD Template_FY22_April 2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/CCS_Monitoria Intensiva_ Template_FY22Abril.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_APR_ECHO_V2.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Abril_2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/ICAP_Abril_2022_Monitoria Intensiva_ Template_FY22Q3.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_04/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_April_05052022.xlsx"
-
-historic_files_path <- "Dataout/MQ_CV/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
-
+# do not update each month
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+path_monthly_output_repo <- "Dataout/MQ_CV/_CompileHistoric/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1RC5VFhD7XkuptW7o3zd21ujY6CefcTyv") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_mqcv.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 
 # LOAD DATASETS -----------------------------------------------------------
 
 
-ajuda_site_map <- read_excel(ajuda_path) %>% 
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(orgunituid,
          sisma_id,
          SNU,
@@ -308,20 +316,125 @@ cv_tidy <- function(filename, ip){
     select(-c(Data))
   
 }
+cv_tidy_new <- function(filename, ip){
+  
+  df <- read_excel(filename, 
+                   sheet = "Monitoria Intensiva",
+                   skip = 9,
+                   col_types = c("text", 
+                                 "text", "text", "text", "text", "text", 
+                                 "text", "text", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric")) %>% 
+    rename(dpi.colheu.pcr_d__all = dpi.colheu.pcr_d_total,
+           dpi.colheu.pcr_n__all = dpi.colheu.pcr_n_total,
+           dpi.pcr.enviado_d__all = dpi.pcr.enviado_d_total,
+           dpi.pcr.enviado_n__all = dpi.pcr.enviado_n_total,
+           dpi.pcr.entregue_d__all = dpi.pcr.entregue_d_total,
+           dpi.pcr.entregue_n__all = dpi.pcr.entregue_n_total,
+           dpi.pcr.tarv_d__all = dpi.pcr.tarv_d_total,
+           dpi.pcr.tarv_n__all = dpi.pcr.tarv_n_total) %>% 
+    
+    pivot_longer('dpi.colheu.pcr_d__all':'mds.cv.supressao_n_mds', 
+                 names_to = c("indicator", "numdenom", "pop_type", "age"), 
+                 names_sep = "_", 
+                 values_to = "value") %>%
+    filter(!numdenom == "prop",
+           !pop_type == "total") %>% 
+    mutate(age = recode(age,
+                        "menor2" = "<2 Months",
+                        "0.1" = "<1",
+                        "0.2" = "0-2",
+                        "0.4" = "0-4",
+                        "1.4" = "1-4",
+                        "5.9" = "5-9",
+                        "10.14" = "10-14",
+                        "15.19" = "15-19",
+                        "0.14" = "0-14",
+                        "1.14" = "1-14",
+                        "2.14" = "2-14"),
+           numdenom = recode(numdenom,
+                             "n" = "N",
+                             "d" = "D"),
+           pop_type = recode(pop_type,
+                             "all" = "All",
+                             "mg" = "MG",
+                             "ml" = "ML",
+                             "mds" = "MDS"),
+           indicator = paste0(indicator,
+                              if_else(numdenom %in% c("D"), "_D", "")),
+           month ={month}) %>% 
+    filter(Partner == ip) %>% 
+    select(-c(Data))
+  
+}
 
-# IMPORT & RESHAPE cv SUBMISSIONS -----------------------------------------------------------
+# IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
 
 dod <- cv_tidy(DOD, "JHPIEGO-DoD")
-echo <- cv_tidy(ECHO, "ECHO")
-fgh <- cv_tidy(FGH, "FGH")
+echo <- cv_tidy_new(ECHO, "ECHO")
+fgh <- cv_tidy_new(FGH, "FGH")
 ariel <- cv_tidy(ARIEL, "ARIEL")
-icap <- cv_tidy(ICAP, "ICAP")
-ccs <- cv_tidy(CCS, "CCS")
+icap <- cv_tidy_new(ICAP, "ICAP")
+ccs <- cv_tidy_new(CCS, "CCS")
 egpaf <- cv_tidy(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
-cv_tidy <- dplyr::bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
+cv_tidy <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
 
 cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
   group_by(Partner) %>% 
@@ -336,16 +449,22 @@ rm(echo, fgh, ariel, icap, ccs, egpaf, dod)
 readr::write_tsv(
   cv_tidy,
   na = "",
-  {monthly_dataset})
+  {path_monthly_output_file})
+
+
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt'))
 
 
 #---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
-historic_files <- dir({historic_files_path}, pattern = "*.txt")
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
 
 historic_import <- historic_files %>%
-  map(~ read_tsv(file.path(historic_files_path, .))) %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
   mutate(month = as.Date(month, "%Y/%m/%d")) 
 
@@ -371,8 +490,14 @@ cv_tidy_historic <- historic_import %>%
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------
 
+# write to local
 write_tsv(
   cv_tidy_historic,
   na = "",
-  {final_compile})
+  path_historic_output_file)
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
+
   

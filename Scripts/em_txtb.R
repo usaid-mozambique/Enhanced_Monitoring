@@ -1,43 +1,50 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
+rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
 
 
 library(tidyverse)
-library(lubridate)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
 library(gt)
-
-rm(list = ls())
+load_secrets() 
 
 
 # DEFINE MONTH AND PATHS ---------------------------
 
+# update each month
+month <- "20/06/2022" 
+file <- "TXTB_2022_06"
 
-month <- "20/03/2022" # UPDATE EACH MONTH
-monthly_dataset <- ("Dataout/TXTB/_CompileHistoric/TXTB_2022_03.txt") # UPDATE EACH MONTH
+# update each month
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
-
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
-
-
-
-historic_files_path <- "Dataout/TXTB/_CompileHistoric/" # DOES NOT REQUIRE UPDATING EACH MONTH
+# do not update each month
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+path_monthly_output_repo <- "Dataout/TXTB/_CompileHistoric/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zKg8l6bmO_6uk9GoOmxYsAWP3msHtjB3") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_txtb.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 
 # LOAD METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,
@@ -63,8 +70,7 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
 txtb_reshape <- function(filename, ip){
   
   df <- read_excel(filename, 
-                   sheet = "TX_TB", col_types = c("numeric", 
-                                                  "text", "text", "text", "text", "text", 
+                   sheet = "TX_TB", col_types = c("text", "text", "text",
                                                   "text", "text", "text", "text", 
                                                   "numeric", "numeric", "numeric", 
                                                   "numeric", "numeric", "numeric", 
@@ -158,9 +164,9 @@ icap <- txtb_reshape(ICAP, "ICAP")
 
 
 txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
-
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
+# detect lines not coded with datim_uids
 txtb %>% 
   filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu1, psnu, sitename)
@@ -168,19 +174,24 @@ txtb %>%
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
-
+# write to local
 readr::write_tsv(
   txtb,
-  {monthly_dataset})
+  {path_monthly_output_file})
+
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt'))
 
 
 #---- SURVEY ALL MONTHLY TXTB DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 
-historic_files <- dir({historic_files_path}, pattern = "*.txt")
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
 txtb_tidy_history <- historic_files %>%
-  map(~ read_tsv(file.path(historic_files_path, .))) %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind)
 
 
@@ -225,7 +236,7 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
          starts_with("TX_")) %>% 
   glimpse()
 
-
+# detect lines not coded with datim_uids
 txtb_tidy_history_2 %>% 
   filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu, psnu, sitename)
@@ -238,6 +249,9 @@ readr::write_tsv(
   txtb_tidy_history_2,
   "Dataout/em_txtb.txt")
 
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
 # GT TABLES ---------------------------------------------------------------
 

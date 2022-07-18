@@ -16,9 +16,9 @@ library(ggthemes)
 # DEFINE PERIODS AND SET PATH - NEEDS UPDATED EVERY MONTH AND QUARTER -----------------------------------------------------------------------------------
 
 
-month <- "01/04/2022" # UPDATE
-monthly_dataset <- "Dataout/PrEP/_CompileHistoric/PrEP_2022_04.txt" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
-prep_submission <- "Data/Ajuda/PrEP/Monthly/PrEP_Monthly Report_APRIL_2022_V2_ECHO.xlsx"
+month <- "01/05/2022" # UPDATE
+monthly_dataset <- "Dataout/PrEP/_CompileHistoric/PrEP_2022_05.txt" # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+prep_submission <- "Data/Ajuda/PrEP/Monthly/PrEP_Monthly Report_May_2022_ECHO.xlsx"
 
 #date_open <- "2021-07-01" # ONLY NEEDED FOR CIRG
 #date_close <- "2021-09-01" # ONLY NEEDED FOR CIRG
@@ -49,7 +49,9 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
          longitude = Long)
 
 
-prep_submission <- read_excel({prep_submission}, sheet = "PrEP_Monthly report", .name_repair = "universal") %>%
+prep_submission <- read_excel({prep_submission}, 
+                              sheet = "PrEP_Monthly report", 
+                              .name_repair = "universal") %>%
   glimpse()
 
 
@@ -179,20 +181,20 @@ hfr_prep <- em_prep_base %>%
                 mech_code = "70212",
                 partner = "ECHO",
                 otherdisaggregate = "",
-                indicator= dplyr::recode(indicator, "PrEP_NEW_VERIFY" = "PrEP_NEW")) %>%
+                date = period,
+                indicator = dplyr::recode(indicator, "PrEP_NEW_VERIFY" = "PrEP_NEW")) %>%
   dplyr::filter(!is.na(age),
-                indicator == "PrEP_NEW",
-                date == as.Date(period)) %>% 
+                indicator == "PrEP_NEW") %>% 
   dplyr::select(c(date, 
-                  orgunit = site, 
-                  orgunituid, 
+                  orgunit = sitename, 
+                  orgunituid = datim_uid, 
                   mech_code, 
                   partner, 
                   operatingunit, 
-                  psnu = district, 
+                  psnu = psnu, 
                   indicator, 
                   sex, 
-                  agecoarse, 
+                  age_coarse, 
                   otherdisaggregate, 
                   val))
 
