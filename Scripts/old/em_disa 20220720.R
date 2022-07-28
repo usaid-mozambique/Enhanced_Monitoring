@@ -1,10 +1,8 @@
 
 #------LOAD CORE TIDYVERSE & OTHER PACKAGES-------------------------------------------
 
-load_secrets()
+
 library(tidyverse)
-library(fs)
-library(googledrive)
 library(glamr)
 library(glitr)
 library(ggthemes)
@@ -18,25 +16,13 @@ rm(list = ls())
 
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-# PATHS THAT REQUIRE UPDATING WITH EACH NEWLY PROCESSED FILE
+
 period <- "2022-05-20"
-file <- "2022_05"
+file_output <- "Dataout/DISA/monthly_processed/2022_05.txt"
+
 file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Maio 2022.xlsx"
-
-# file_output <- "Dataout/DISA/monthly_processed/2022_05.txt"
-
-
-
-
-
-# PATHS THAT DO NOT REQUIRE UPDATING
-
-path_historic_output_local <- "Dataout/DISA/monthly_processed/"
-file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
-file_historic_output_local <- "Dataout/em_disa.txt"
-
-path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
-path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zbvF0hZer_m_oUpJ4D_4vBQJK3EV3G-2")
+historic_files_path <- "Dataout/DISA/monthly_processed/"
+file_output_historic <- "Dataout/em_disa.txt"
 
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
@@ -209,22 +195,17 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
 
 readr::write_tsv(
   disa,
-  {file_monthly_output_local},
+  {file_output},
   na ="")
 
-drive_put(file_monthly_output_local,
-          path = path_monthly_output_gdrive,
-          name = glue({file}, '.txt')
-)
+
+# SURVEY ALL MONTHLY DISA DATASETS AND COMPILE ----------------------------
 
 
-  # SURVEY ALL MONTHLY DISA DATASETS AND COMPILE ----------------------------
-
-
-historic_files <- dir({path_historic_output_local}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+historic_files <- dir({historic_files_path}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 disa_temp <- historic_files %>%
-  map(~ read_tsv(file.path(path_historic_output_local, .))) %>%
+  map(~ read_tsv(file.path(historic_files_path, .))) %>%
   reduce(rbind)
 
 
@@ -308,13 +289,13 @@ df_vl_plot %>%
 
 
 write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl.xlsx"},
+           {"Dataout/DISA/missing_sites_mfl_april22.xlsx"},
            overwrite = TRUE)
 
 
 readr::write_tsv(
   disa_final,
-  {file_historic_output_local},
+  {file_output_historic},
   na = "")
 
 

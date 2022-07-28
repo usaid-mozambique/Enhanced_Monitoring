@@ -1,8 +1,11 @@
 
 #------LOAD CORE TIDYVERSE & OTHER PACKAGES-------------------------------------------
 
-
+load_secrets()
 library(tidyverse)
+library(fs)
+library(googlesheets4)
+library(googledrive)
 library(glamr)
 library(glitr)
 library(ggthemes)
@@ -16,13 +19,18 @@ rm(list = ls())
 
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
-
+# paths that require updating with each new monthly file
 period <- "2022-05-20"
-file_output <- "Dataout/DISA/monthly_processed/2022_05.txt"
-
+file <- "2022_05"
 file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Maio 2022.xlsx"
-historic_files_path <- "Dataout/DISA/monthly_processed/"
-file_output_historic <- "Dataout/em_disa.txt"
+
+# paths that do not require monthly updating
+path_historic_output_local <- "Dataout/DISA/monthly_processed/"
+file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
+file_historic_output_local <- "Dataout/em_disa.txt"
+
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zbvF0hZer_m_oUpJ4D_4vBQJK3EV3G-2")
 
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
@@ -35,7 +43,7 @@ disa_datim_map <- read_excel("Documents/disa_datim_map_JUNHO022022.xlsx") %>%
 
 datim_ou_map <- read_excel("Documents/tx_site_reference_JUL2022.xlsx")
 
-# DISA BY AGE
+# disa by age
 xAge <- read_excel({file_input}, 
                    sheet = "Age & Sex", 
                    col_types = c("text", "text", "text", "text",
@@ -48,7 +56,7 @@ xAge <- read_excel({file_input},
   mutate(group = "Age") %>%
   glimpse()
 
-# DISA PREGNANT WOMEN
+# disa pregnant women
 xPW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Gravidas)",
                   col_types = c("text", "text", "text",
@@ -64,7 +72,7 @@ xPW <- read_excel({file_input},
          DISTRITO = DISTRITO) %>% 
   glimpse
 
-
+# disa lactating women
 xLW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Lactantes)",
                   col_types = c("text", "text", "text",
@@ -80,7 +88,7 @@ xLW <- read_excel({file_input},
          DISTRITO = DISTRITO) %>% 
   glimpse
 
-# DISA TURN AROUND TIME
+# disa turn around time
 df_tat <- read_excel({file_input}, 
                      sheet = "TRL", col_types = c("text", "text", "text",
                                                   "text", "text", "text", "numeric", 
@@ -115,11 +123,6 @@ df_vl <- df_vl %>%
                                    grepl(">1000", indicator) ~ ">1000"),
          tat_step = "temp") %>% 
   select(-c(indicator)) %>% 
-
-  
-#---- RECODE VL AGE/SEX VALUES -----------------------------------------------
-
-
 mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
        age = recode(age, "No Age Specified" = "Unknown Age"),
        age = recode(age, "Não especificada" = "Unknown Age"),
@@ -135,11 +138,6 @@ mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
        sex = recode(sex, "M" = "Male"),
        sex = replace_na(sex, "Unknown")
 ) %>% 
-
-  
-#---- FILTER VL LINES ONLY >0 -----------------------------------------------
-
-
   filter(value > 0) %>% 
   mutate(indicator = "VL",
          period = {period})
@@ -190,22 +188,42 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
   glimpse()
 
 
+disa %>% # tabulate sites that have viral load results reported
+  filter(!is.na(disa_uid)) %>% 
+  group_by(snu) %>% 
+  distinct(sitename) %>% 
+  summarise(n()) %>% 
+  arrange(`n()`)
+
+disa %>% # tabulate sites missing disa unique identifiers
+  filter(is.na(disa_uid)) %>% 
+  group_by(snu) %>% 
+  distinct(sitename) %>% 
+  summarise(n()) %>% 
+  arrange(`n()`)
+
+
 # PRINT MONTHLY OUTPUT ----------------------------------------------------
 
 
 readr::write_tsv(
   disa,
-  {file_output},
+  {file_monthly_output_local},
   na ="")
+
+drive_put(file_monthly_output_local,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt')
+)
 
 
 # SURVEY ALL MONTHLY DISA DATASETS AND COMPILE ----------------------------
 
 
-historic_files <- dir({historic_files_path}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+historic_files <- dir({path_historic_output_local}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 disa_temp <- historic_files %>%
-  map(~ read_tsv(file.path(historic_files_path, .))) %>%
+  map(~ read_tsv(file.path(path_historic_output_local, .))) %>%
   reduce(rbind)
 
 
@@ -216,6 +234,13 @@ disa_meta <- disa_temp %>%
   left_join(disa_datim_map, by = c("disa_uid" = "DISA_ID")) %>% 
   mutate(ajuda = replace_na(ajuda, 0)) %>% 
   relocate(c(ajuda, sisma_uid, datim_uid), .before = disa_uid)
+
+# number of sites missing datim_uid coding
+disa_meta %>% 
+  filter(is.na(datim_uid)) %>% 
+  group_by(snu) %>% 
+  distinct(sitename) %>% 
+  summarise(n())
 
 
 #---- FILTER OUT ROWS WITHOUT DATIM UID AND GROUP DATA -------------------------------
@@ -276,7 +301,7 @@ df_vl_plot <- disa_final %>%
   ungroup()
 
 df_vl_plot %>% 
-  ggplot(aes(x = period, y = VL, color = partner)) + 
+  ggplot(aes(x = period, y = VL, fill = partner)) + 
   geom_col() + 
   labs(title = "TX_CURR Trend by Partner",
        subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
@@ -289,13 +314,13 @@ df_vl_plot %>%
 
 
 write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl_april22.xlsx"},
+           {"Dataout/DISA/missing_sites_mfl.xlsx"},
            overwrite = TRUE)
 
 
 readr::write_tsv(
   disa_final,
-  {file_output_historic},
+  {file_historic_output_local},
   na = "")
 
 

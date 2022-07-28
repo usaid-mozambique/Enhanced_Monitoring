@@ -18,19 +18,18 @@ load_secrets()
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
-month <- "2022-06-20"
-# month <- "20/06/2022" 
-file <- "MQ_2022_06"
+month <- "2022-03-20"
+file <- "MQ_2022_03"
 
 
 # do not update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/DOD__Mar_2022 final 20122021 DOD Jhpiego Included Monitoria Intensiva new Template.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ARIEL Monitoria Intensiva_ Template_FY22Q2 21.04.2022.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/CCS_Monitoria Intensiva_ Template_FY22Q2.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/EGPAF_Monitoria Intensiva_ Template_FY22Q2 Marco_2022_versao 2.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/ICAP_Marco2022_Monitoria Intensiva_ Template_FY22Q2_Update18042022.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_03/Monitoria Intensiva_ Template_FY22Q2_FGH_Montlhy_data_March_22042022.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -56,6 +55,7 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
 
 # CREATE FUNCTION TO TIDY CV DATASETS ---------------------------------------------------------
 
+# old function to use May '22 back
 cv_tidy <- function(filename, ip){
   
   df <- read_excel(filename, 
@@ -316,6 +316,8 @@ cv_tidy <- function(filename, ip){
     select(-c(Data))
   
 }
+
+# new function to use June '22 forward
 cv_tidy_new <- function(filename, ip){
   
   df <- read_excel(filename, 
@@ -387,7 +389,6 @@ cv_tidy_new <- function(filename, ip){
            dpi.pcr.entregue_n__all = dpi.pcr.entregue_n_total,
            dpi.pcr.tarv_d__all = dpi.pcr.tarv_d_total,
            dpi.pcr.tarv_n__all = dpi.pcr.tarv_n_total) %>% 
-    
     pivot_longer('dpi.colheu.pcr_d__all':'mds.cv.supressao_n_mds', 
                  names_to = c("indicator", "numdenom", "pop_type", "age"), 
                  names_sep = "_", 
@@ -425,11 +426,11 @@ cv_tidy_new <- function(filename, ip){
 # IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
 
 dod <- cv_tidy(DOD, "JHPIEGO-DoD")
-echo <- cv_tidy_new(ECHO, "ECHO")
-fgh <- cv_tidy_new(FGH, "FGH")
+echo <- cv_tidy(ECHO, "ECHO")
+fgh <- cv_tidy(FGH, "FGH")
 ariel <- cv_tidy(ARIEL, "ARIEL")
-icap <- cv_tidy_new(ICAP, "ICAP")
-ccs <- cv_tidy_new(CCS, "CCS")
+icap <- cv_tidy(ICAP, "ICAP")
+ccs <- cv_tidy(CCS, "CCS")
 egpaf <- cv_tidy(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
@@ -485,6 +486,15 @@ cv_tidy_historic <- historic_import %>%
   relocate(sisma_uid, .after = datim_uid) %>%
   relocate(period:partner, .after = sisma_nid) %>%
   pivot_wider(names_from =  indicator, values_from = value) %>%
+  glimpse()
+
+# check that all monthly data is coded to a partner
+cv_tidy_historic %>% 
+  pivot_longer(cols = dpi.colheu.pcr_D:tx.pvls, names_to = "indicator", values_to = "value") %>% 
+  filter(period == month) %>% 
+  group_by(partner) %>% 
+  distinct(datim_uid) %>% 
+  summarise(n())
   glimpse()
 
 
