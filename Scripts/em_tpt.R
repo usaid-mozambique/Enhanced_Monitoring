@@ -29,13 +29,13 @@ ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTempla
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
-path_monthly_output_repo <- "Dataout/TPT/_CompileHistoric/" # folder path where monthly dataset archived
-path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "csv") # composite path/filename where monthly dataset saved
+path_monthly_output_repo <- "Dataout/TPT/monthly_processed/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") # google drive folder where monthly dataset saved 
 path_historic_output_file <- "Dataout/em_tpt.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
@@ -156,23 +156,36 @@ drive_put(path_monthly_output_file,
 #---- SURVEY AND COMBINE ALL MONTHLY TPT DATASETS TO BUILD HISTORIC DATASET ---------------------------------
 
 
-historic_files <- dir({path_monthly_output_repo}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+# historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+# 
+# chr_files <- historic_files[historic_files %in% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
+# non_chr_files <- historic_files[historic_files %ni% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
+# 
+# temp_chr_files <- chr_files %>%
+#   map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
+#   reduce(rbind) %>% 
+#   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
+# 
+# temp_non_chr_files <- non_chr_files %>%
+#   map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
+#   reduce(rbind) %>% 
+#   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
+# 
+# tpt_tidy_history <- bind_rows(temp_non_chr_files, temp_chr_files)
 
-chr_files <- historic_files[historic_files %in% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
-non_chr_files <- historic_files[historic_files %ni% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
 
-temp_chr_files <- chr_files %>%
-  map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+
+tpt_tidy_history <- historic_files %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
-temp_non_chr_files <- non_chr_files %>%
-  map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
-  reduce(rbind) %>% 
-  mutate(Period = as.Date(Period, "%d/%m/%Y")) 
 
-tpt_tidy_history <- bind_rows(temp_non_chr_files, temp_chr_files)
-
+# write_tsv(
+#   tpt_tidy_history,
+#   "Dataout/TPT/outdated/TPT_2021_03_2022_06.txt")
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 

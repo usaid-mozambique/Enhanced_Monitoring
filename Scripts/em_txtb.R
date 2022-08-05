@@ -16,8 +16,8 @@ library(glue)
 library(gt)
 load_secrets() 
 
-
-# DEFINE MONTH AND PATHS ---------------------------
+ 
+# VALUES & PATHS ---------------------------
 
 # update each month
 month <- "20/06/2022" 
@@ -29,7 +29,7 @@ ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTempla
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
 # do not update each month
@@ -41,7 +41,7 @@ path_historic_output_file <- "Dataout/em_txtb.txt" # folder path where monthly d
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 
-# LOAD METADATA -----------------------------------------------------------
+# METADATA -----------------------------------------------------------
 
 
 ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
@@ -64,7 +64,7 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
          longitude = Long)
 
 
-# CREATE FUNCTION TXTB RESHAPE ---------------------------------------------
+# FUNCTIONS ---------------------------------------------
 
 
 txtb_reshape <- function(filename, ip){
@@ -148,7 +148,8 @@ txtb_reshape <- function(filename, ip){
 }
 
 
-# IMPORT & RESHAPE TXTB SUBMISSIONS -------------------------------------------------
+
+# FUNCTIONS RUN -------------------------------------------------
 
 
 dod <- txtb_reshape(DOD, "JHPIEGO-DoD")
@@ -160,7 +161,7 @@ fgh <- txtb_reshape(FGH, "FGH")
 icap <- txtb_reshape(ICAP, "ICAP")
 
 
-# COMPILE IP SUMBISSIONS & CHECK FOR NA'S IN SITE DATIMUIDS --------------------------------------------------
+# COMPILE DATASETS --------------------------------------------------
 
 
 txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
@@ -172,7 +173,7 @@ txtb %>%
   distinct(datim_uid, snu1, psnu, sitename)
 
 
-# WRITE MONTHLY TPT CSV TO DISK ------------------------------------
+# MONTHLY FILE WRITE ------------------------------------
 
 # write to local
 readr::write_tsv(
@@ -185,7 +186,7 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.txt'))
 
 
-#---- SURVEY ALL MONTHLY TXTB DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+# HISTORIC DATASET BUILD ---------------------------------
 
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
@@ -195,7 +196,7 @@ txtb_tidy_history <- historic_files %>%
   reduce(rbind)
 
 
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# HF VOLUME CALCULATE -----------------------
 
 
 volumn_period <- txtb_tidy_history %>% 
@@ -212,7 +213,7 @@ volumn_period <- txtb_tidy_history %>%
   glimpse()
 
 
-#---- JOIN AJUDA SITEMAP, CLEAN DATAFRAME & CHECK FOR NA'S IN SITE DATIMUIDS -----------------------
+# METADATA JOIN -----------------------
 
 
 txtb_tidy_history_2 <- txtb_tidy_history %>%
@@ -242,7 +243,7 @@ txtb_tidy_history_2 %>%
   distinct(datim_uid, snu, psnu, sitename)
 
 
-# PRINT FINAL OUTPUT TO DISK ----------------------------------------------
+# OUTPUT WRITE ----------------------------------------------
 
 
 readr::write_tsv(
@@ -253,7 +254,7 @@ readr::write_tsv(
 drive_put(path_historic_output_file,
           path = path_historic_output_gdrive)
 
-# GT TABLES ---------------------------------------------------------------
+# PLOTS & TABLES ---------------------------------------------------------------
 
 
 tbl <- txtb_tidy_history_2 %>%
@@ -291,7 +292,7 @@ tbl <- txtb_tidy_history_2 %>%
     footnotes.font.size = 8) %>% 
   
   tab_header(title = "Mozambique TX_TB Enhanced Monitoring") %>% 
-  tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
+  tab_source_note("Source: AJUDA Enhanced Monitoring") 
 
 
 tbl

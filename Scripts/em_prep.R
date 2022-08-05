@@ -17,7 +17,7 @@ library(gt)
 load_secrets() 
 
 
-# DEFINE VALUES AND PATHS ---------------------------
+# VALUES & PATHS ---------------------------
 
 # update each month
 month <- "20/06/2022" 
@@ -29,7 +29,7 @@ ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTempla
 CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
 ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP_Junho_2022_Monitoria Intensiva_ Template_FY22Q3_updated 12072022.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
 FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
 
 
@@ -41,7 +41,7 @@ path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1BYq
 path_historic_output_file <- "Dataout/em_prep.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
-# LOAD METADATA -----------------------------------------------------------
+# METADATA -----------------------------------------------------------
 
 
 ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
@@ -64,7 +64,7 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
          longitude = Long)
 
 
-# CREATE FUNCTION TPT RESHAPE ---------------------------------------------
+# FUNCTIONS ---------------------------------------------
 
 prep_reshape <- function(filename, ip){
   
@@ -178,7 +178,7 @@ prep_reshape <- function(filename, ip){
   
 }
 
-# IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
+# FUNCTIONS RUN -------------------------------------------------
 
 
 dod <- prep_reshape(DOD, "JHPIEGO-DoD")
@@ -191,11 +191,11 @@ icap <- prep_reshape(ICAP, "ICAP")
 
 glimpse(ccs)
 
-# COMPILE IP SUMBISSIONS --------------------------------------------------
+# COMPILE DATASETS --------------------------------------------------
 
 
-prep <- bind_rows(dod, echo, ariel, ccs, egpaf, fgh)
-rm(dod, echo, ariel, ccs, egpaf, fgh)
+prep <- bind_rows(dod, echo, ariel, ccs, egpaf, fgh, icap)
+rm(dod, echo, ariel, ccs, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
 prep %>% 
@@ -203,7 +203,7 @@ prep %>%
   distinct(`Datim Code`, Province, District, `Health Facility`)
 
 
-# WRITE MONTHLY TPT CSV TO DISK ------------------------------------
+# MONTHLY FILE WRITE ------------------------------------
 
 # write to local
 readr::write_tsv(
@@ -217,7 +217,7 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.txt'))
 
 
-#---- SURVEY AND COMBINE ALL MONTHLY TPT DATASETS TO BUILD HISTORIC DATASET ---------------------------------
+# HISTORIC DATASET BUILD ---------------------------------
 
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
@@ -227,7 +227,7 @@ historic_import <- historic_files %>%
   reduce(rbind)
 
 
-#---- JOIN METADATA ---------------------------------
+# METADATA JOIN ---------------------------------
 
 prep_tidy_historic <- historic_import %>% 
   select(-c(No,
@@ -244,7 +244,7 @@ prep_tidy_historic <- historic_import %>%
   glimpse()
 
 
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# OUTPUT CLEAN -----------------------
 
 
 prep_tidy_historic_2 <- prep_tidy_historic %>%
@@ -267,7 +267,7 @@ prep_tidy_historic_2 <- prep_tidy_historic %>%
   glimpse()
 
 
-# WRITE FINAL OUTPUT TO DISK ----------------------------------------------
+# OUTPUT WRITE ----------------------------------------------
 
 # write to local
 readr::write_tsv(
@@ -277,4 +277,48 @@ readr::write_tsv(
 # write to google drive
 drive_put(path_historic_output_file,
           path = path_historic_output_gdrive)
+
+
+# PLOTS & TABLES ---------------------------------------------------------------
+
+tbl <- prep_tidy_historic_2 %>%
+  pivot_longer(cols = PrEP_Eligible:PrEP_CT_3months, names_to = "indicator", values_to = "value") %>% 
+  select(indicator, period, value) %>% 
+  arrange((period)) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format = "%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = !c(indicator), 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(200),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique PrEP Enhanced Monitoring") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring") 
+
+
+tbl
+
 
