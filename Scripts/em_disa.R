@@ -20,17 +20,18 @@ rm(list = ls())
 #---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2022-05-20"
-file <- "2022_05"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Maio 2022.xlsx"
+period <- "2022-06-20"
+file <- "2022_06"
+file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Junho 2022.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
 file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
 file_historic_output_local <- "Dataout/em_disa.txt"
 
+
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
-path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zbvF0hZer_m_oUpJ4D_4vBQJK3EV3G-2")
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
 
 
 #---- LOAD DATASETS AND UNION -------------------------------------------------------
@@ -46,7 +47,7 @@ datim_ou_map <- read_excel("Documents/tx_site_reference_JUL2022.xlsx")
 # disa by age
 xAge <- read_excel({file_input}, 
                    sheet = "Age & Sex", 
-                   col_types = c("text", "text", "text", "text",
+                   col_types = c("text", "text", "text", "text", "text",
                                  "text", "text", "text", "text", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
@@ -59,7 +60,7 @@ xAge <- read_excel({file_input},
 # disa pregnant women
 xPW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Gravidas)",
-                  col_types = c("text", "text", "text",
+                  col_types = c("text", "text", "text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -67,15 +68,12 @@ xPW <- read_excel({file_input},
                                 "numeric"), 
                   skip = 2) %>% 
   mutate(group = "PW") %>% 
-  rename(US = US,
-         PROVINCIA = PROVINCIA,
-         DISTRITO = DISTRITO) %>% 
   glimpse
 
 # disa lactating women
 xLW <- read_excel({file_input}, 
                   sheet = "S. Viral (M. Lactantes)",
-                  col_types = c("text", "text", "text",
+                  col_types = c("text", "text", "text", "text",
                                 "text", "text", "text", "numeric", 
                                 "numeric", "numeric", "numeric", 
                                 "numeric", "numeric", "numeric", 
@@ -83,23 +81,23 @@ xLW <- read_excel({file_input},
                                 "numeric"),
                   skip = 2) %>% 
   mutate(group = "LW") %>%
-  rename(US = US,
-         PROVINCIA = PROVINCIA,
-         DISTRITO = DISTRITO) %>% 
   glimpse
+
 
 # disa turn around time
 df_tat <- read_excel({file_input}, 
-                     sheet = "TRL", col_types = c("text", "text", "text",
-                                                  "text", "text", "text", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric"), 
+                     sheet = "TRL - AVG", 
+                     col_types = c("text", 
+                                   "text", "text", "text", "text", "text", 
+                                   "text", "numeric", "numeric", "numeric", 
+                                   "numeric", "numeric"), 
                      skip = 2) %>% 
   select(-c(TOTAL))
 
+
 df_vl <- bind_rows(xAge, xPW, xLW)
 
-rm(xAge, xPW, xLW)
+# rm(xAge, xPW, xLW)
 
 #---- PROCESS VL DATAFRAME -------------------------------------------------------
 
@@ -110,10 +108,10 @@ df_vl <- df_vl %>%
          disa_uid = `DISA ID`,
          snu = PROVINCIA,
          psnu = DISTRITO,
-         sitename = US,
+         sitename = `U. SANITARIA`,
          age = Idade,
          sex = Sexo) %>% 
-  relocate(c(group), .before = sitename) %>% 
+  relocate(c(group, DISAID), .before = sitename) %>% 
   pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
   mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
                                    grepl("Fal", indicator) ~ "Theraputic Failure",
@@ -151,7 +149,7 @@ df_tat <- df_tat %>%
          disa_uid = `DISA ID`,
          snu = PROVINCIA,
          psnu = DISTRITO,
-         sitename = US) %>% 
+         sitename = `U. SANITARIA`) %>% 
   pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
   mutate(tat_step = recode(tat_step, 
                            "COLHEITA À RECEPÇÃO" = "S1: Collection to Receipt",
@@ -323,4 +321,5 @@ readr::write_tsv(
   {file_historic_output_local},
   na = "")
 
-
+drive_put(file_historic_output_local,
+          path = path_historic_output_gdrive)

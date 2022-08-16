@@ -33,7 +33,7 @@ FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTem
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
-path_monthly_output_repo <- "Dataout/MQ_CV/_CompileHistoric/" # folder path where monthly dataset archived
+path_monthly_output_repo <- "Dataout/MQ_CV/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1RC5VFhD7XkuptW7o3zd21ujY6CefcTyv") # google drive folder where monthly dataset saved 
 path_historic_output_file <- "Dataout/em_mqcv.txt" # folder path where monthly dataset archived
@@ -317,7 +317,7 @@ cv_tidy <- function(filename, ip){
   
 }
 
-# new function to use June '22 forward
+# new function to use June '22
 cv_tidy_new <- function(filename, ip){
   
   df <- read_excel(filename, 
@@ -423,14 +423,122 @@ cv_tidy_new <- function(filename, ip){
   
 }
 
+# new function to use July '22 forward
+cv_tidy_newest <- function(filename, ip){
+  
+  df <- read_excel(filename, 
+                   sheet = "Monitoria Intensiva",
+                   skip = 9,
+                   col_types = c("text", 
+                                 "text", "text", "text", "text", "text", 
+                                 "text", "text", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric", "numeric", 
+                                 "numeric", "numeric")) %>% 
+    rename(dpi.colheu.pcr_d__all = dpi.colheu.pcr_d_total,
+           dpi.colheu.pcr_n__all = dpi.colheu.pcr_n_total,
+           dpi.pcr.enviado_d__all = dpi.pcr.enviado_d_total,
+           dpi.pcr.enviado_n__all = dpi.pcr.enviado_n_total,
+           dpi.pcr.entregue_d__all = dpi.pcr.entregue_d_total,
+           dpi.pcr.entregue_n__all = dpi.pcr.entregue_n_total,
+           dpi.pcr.tarv_d__all = dpi.pcr.tarv_d_total,
+           dpi.pcr.tarv_n__all = dpi.pcr.tarv_n_total) %>% 
+    pivot_longer('dpi.colheu.pcr_d__all':'mds.cv.estaveis_n_mds', 
+                 names_to = c("indicator", "numdenom", "pop_type", "age"), 
+                 names_sep = "_", 
+                 values_to = "value") %>%
+    filter(!numdenom == "prop",
+           !pop_type == "total") %>% 
+    mutate(age = recode(age,
+                        "menor2" = "<2 Months",
+                        "0.1" = "<1",
+                        "0.2" = "0-2",
+                        "0.4" = "0-4",
+                        "1.4" = "1-4",
+                        "5.9" = "5-9",
+                        "10.14" = "10-14",
+                        "15.19" = "15-19",
+                        "0.14" = "0-14",
+                        "1.14" = "1-14",
+                        "2.14" = "2-14"),
+           numdenom = recode(numdenom,
+                             "n" = "N",
+                             "d" = "D"),
+           pop_type = recode(pop_type,
+                             "all" = "All",
+                             "mg" = "MG",
+                             "ml" = "ML",
+                             "mds" = "MDS"),
+           indicator = paste0(indicator,
+                              if_else(numdenom %in% c("D"), "_D", "")),
+           month ={month}) %>% 
+    filter(Partner == ip) %>% 
+    select(-c(Data))
+  
+}
+
+
 # IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
 
 dod <- cv_tidy(DOD, "JHPIEGO-DoD")
-echo <- cv_tidy(ECHO, "ECHO")
-fgh <- cv_tidy(FGH, "FGH")
-ariel <- cv_tidy(ARIEL, "ARIEL")
+echo <- cv_tidy_new(ECHO, "ECHO")
+fgh <- cv_tidy_new(FGH, "FGH")
+ariel <- cv_tidy_new(ARIEL, "ARIEL")
 icap <- cv_tidy(ICAP, "ICAP")
-ccs <- cv_tidy(CCS, "CCS")
+ccs <- cv_tidy_new(CCS, "CCS")
 egpaf <- cv_tidy(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
@@ -459,7 +567,7 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.txt'))
 
 
-#---- SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+# SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
@@ -470,7 +578,7 @@ historic_import <- historic_files %>%
   mutate(month = as.Date(month, "%Y/%m/%d")) 
 
 
-#---- JOIN METADATA ---------------------------------
+# JOIN METADATA ---------------------------------
 
 cv_tidy_historic <- historic_import %>% 
   select(-c(No,
@@ -490,7 +598,7 @@ cv_tidy_historic <- historic_import %>%
 
 # check that all monthly data is coded to a partner
 cv_tidy_historic %>% 
-  pivot_longer(cols = dpi.colheu.pcr_D:tx.pvls, names_to = "indicator", values_to = "value") %>% 
+  pivot_longer(cols = dpi.colheu.pcr_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
   filter(period == month) %>% 
   group_by(partner) %>% 
   distinct(datim_uid) %>% 

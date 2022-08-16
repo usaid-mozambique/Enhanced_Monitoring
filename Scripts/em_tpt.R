@@ -20,17 +20,17 @@ load_secrets()
 # DEFINE VALUES AND PATHS ---------------------------
 
 # update each month
-month <- "20/06/2022" 
-file <- "TPT_2022_06"
+month <- "2022-07-20" 
+file <- "TPT_2022_07"
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -143,8 +143,9 @@ tpt_tidy <- tpt %>%
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
 # write to local
-readr::write_csv(
+readr::write_tsv(
   tpt_tidy,
+  na = "",
   {path_monthly_output_file})
 
 # write to google drive
@@ -288,8 +289,7 @@ tbl
 
 sims_indicator <- tpt_tidy_history_2 %>% 
   filter(indicator %in% c("TPT Completed/Active", "TX_CURR"),
-         period == max(period),
-         partner == "ECHO") %>% 
+         period == max(period)) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
   group_by(period, datim_uid, snu, psnu, sitename) %>% 
   summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE),

@@ -20,21 +20,21 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "20/06/2022" 
-file <- "TXTB_2022_06"
+month <- "20/07/2022" 
+file <- "TXTB_2022_07"
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
-path_monthly_output_repo <- "Dataout/TXTB/_CompileHistoric/" # folder path where monthly dataset archived
+path_monthly_output_repo <- "Dataout/TXTB/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zKg8l6bmO_6uk9GoOmxYsAWP3msHtjB3") # google drive folder where monthly dataset saved 
 path_historic_output_file <- "Dataout/em_txtb.txt" # folder path where monthly dataset archived
@@ -58,11 +58,15 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
          his_disa = disa,
          support_ovc = ovc,
          support_ycm = ycm,
+         adv_disease_phase,
          ovc,
          ycm,
          latitude = Lat,
          longitude = Long)
 
+
+ajuda_site_map %>% 
+  count(adv_disease_phase)
 
 # FUNCTIONS ---------------------------------------------
 
@@ -227,6 +231,7 @@ txtb_tidy_history_2 <- txtb_tidy_history %>%
          snu,
          psnu = psnu.y,
          sitename = sitename.y,
+         adv_disease_phase,
          site_volume,
          ends_with("tude"),
          starts_with("support"),

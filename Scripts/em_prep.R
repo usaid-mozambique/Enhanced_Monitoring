@@ -20,17 +20,17 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "20/06/2022" 
-file <- "PREP_2022_06"
+month <- "20/07/2022" 
+file <- "PREP_2022_07"
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_FGH.xlsx"
 
 
 # do not update each month

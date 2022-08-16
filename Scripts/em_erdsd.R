@@ -1,22 +1,35 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
-
 rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
+
 
 library(tidyverse)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
+library(ggthemes)
 library(readxl)
 library(openxlsx)
 library(glue)
-library(ggthemes)
-library(scales)
+library(gt)
+load_secrets() 
 
 
-# IMPORT DATA -------------------------------------------------------------
+
+# do not update each month
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+path_historic_input_file <- "Data/Ajuda/ERDSD/erdsd.csv"
+path_historic_output_file <- "Dataout/em_erdsd.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+# LOAD METADATA -----------------------------------------------------------
+
+
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,
@@ -30,35 +43,26 @@ ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xls
          his_disa = disa,
          support_ovc = ovc,
          support_ycm = ycm,
-         ovc,
-         ycm,
          latitude = Lat,
          longitude = Long)
 
 
-df0 <- read_tsv("Data/Ajuda/ERDSD/AJUDA_transformed.txt") %>% 
+
+df0 <- read_csv(path_historic_input_file) %>% 
   mutate(Months = as.Date(Months, "%d/%m/%Y"))
 
 
-# df1 <- read_csv("Data/Ajuda/ERDSD/AJUDA_transformed_Mar22.txt") %>% 
-#   select(!c(`...1`, id)) %>% 
-#   rename(Health.Facility = `Health Facility`)
-# 
-# df2 <- bind_rows(df1, df0)
+months <- df0 %>% 
+  distinct(Months)
 
-
-#-------------------------------------------------------------------  ----------------
-# DEFINE PATH FOR OUTPUT
-
-
-em_erdsd <- ("Dataout/em_erdsd.txt") 
 
 
 # PROCESS ER/DSD DATAFRAME ------------------------------------------------
 
 
-df_tidy <- df2 %>% 
-  mutate(row_n = row_number()) %>% 
+df_tidy <- df0 %>% 
+  mutate(row_n = row_number(),
+         DATIM_code = recode(DATIM_code, EjFYleP5G9K = "LqB6YZq9sG2")) %>% 
   pivot_wider(names_from = Indicator, values_from = value, values_fill = 0) %>% 
   mutate(ER1Month_N = case_when(!PatientType == "Total" & NumDen == "Numerator" ~ ER1Month),
          ER1Month_D = case_when(!PatientType == "Total" & NumDen == "Denominator" ~ ER1Month),
@@ -153,14 +157,17 @@ df_tidy_2 <- df_tidy %>%
   glimpse()
 
 
-
 # PRINT DATAFRAME TO DISK -------------------------------------------------
 
 
 write_tsv(
   df_tidy_2,
-  {em_erdsd})
+  {path_historic_output_file})
 
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
 # TABLES & GRAPHS --------------------------------------------------
 
@@ -187,7 +194,7 @@ df_tidy_graph <- df_tidy_2 %>%
 
 
 df_tidy_graph %>% 
-  ggplot(aes(x = period, y = TX_CURR, color = partner)) + 
+  ggplot(aes(x = period, y = TX_CURR, fill = partner)) + 
   geom_col() + 
   labs(title = "TX_CURR Trend by Partner",
        subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
