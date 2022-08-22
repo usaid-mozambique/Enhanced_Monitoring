@@ -1,5 +1,8 @@
 
-#------LOAD CORE TIDYVERSE & OTHER PACKAGES-------------------------------------------
+rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
+
 
 load_secrets()
 library(tidyverse)
@@ -14,10 +17,8 @@ library(glue)
 library(readxl)
 library(openxlsx)
 
-rm(list = ls())
 
-
-#---- DEFINE PATHS AND VALUES - REQUIREs UPDATING WITH EACH NEW DATASET! -------------------------------------------------------
+# VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
 period <- "2022-06-20"
@@ -34,7 +35,8 @@ path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
 
 
-#---- LOAD DATASETS AND UNION -------------------------------------------------------
+# DATA LOAD, MUNGE & COMPILE -------------------------------------------------------
+
 
 disa_datim_map <- read_excel("Documents/disa_datim_map_JUNHO022022.xlsx") %>%
   select(DISA_ID, 
@@ -99,7 +101,8 @@ df_vl <- bind_rows(xAge, xPW, xLW)
 
 # rm(xAge, xPW, xLW)
 
-#---- PROCESS VL DATAFRAME -------------------------------------------------------
+# CLEAN VL DATAFRAME ---------------------------------------------------------
+
 
 
 df_vl <- df_vl %>% 
@@ -111,13 +114,13 @@ df_vl <- df_vl %>%
          sitename = `U. SANITARIA`,
          age = Idade,
          sex = Sexo) %>% 
-  relocate(c(group, DISAID), .before = sitename) %>% 
+  relocate(c(group, disa_uid), .before = sitename) %>% 
   pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
-  mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
+  mutate(motive = case_when(grepl("Rotina", indicator) ~ "Routine",
                                    grepl("Fal", indicator) ~ "Theraputic Failure",
                                    grepl("Repetir", indicator) ~ "Post Breastfeeding",
                                    grepl("Motivo de Teste NS", indicator) ~ "Not Specified"),
-         result = dplyr::case_when(grepl("<1000", indicator) ~ "<1000",
+         result = case_when(grepl("<1000", indicator) ~ "<1000",
                                    grepl(">1000", indicator) ~ ">1000"),
          tat_step = "temp") %>% 
   select(-c(indicator)) %>% 
@@ -141,7 +144,7 @@ mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
          period = {period})
 
 
-#---- PROCESS TAT DATAFRAME -----------------------------------------------
+# CLEAN TAT DATAFRAME -----------------------------------------------------
 
 
 df_tat <- df_tat %>% 
@@ -163,7 +166,7 @@ df_tat <- df_tat %>%
 disa_vl <- bind_rows(df_vl, df_tat)
 
 
-# CREATE VLS DATASET ------------------------------------------------------
+# SUBSET VLS DATAFRAME ------------------------------------------------------
 
 
 disa_vls <- disa_vl %>% 
@@ -171,7 +174,7 @@ disa_vls <- disa_vl %>%
   mutate(indicator = "VLS")
 
 
-#---- UNION VL & VLS DATAFRAMES, PIVOT WIDER AND GROUP ----------------
+# DATAFRAME COMPILE, GROUP, & PIVOT WIDE ----------------------------------
 
 
 disa <- bind_rows(disa_vl, disa_vls) %>% 
@@ -185,15 +188,16 @@ disa <- bind_rows(disa_vl, disa_vls) %>%
   ungroup() %>% 
   glimpse()
 
-
-disa %>% # tabulate sites that have viral load results reported
+# tabulate sites that have viral load results reported
+disa %>% 
   filter(!is.na(disa_uid)) %>% 
   group_by(snu) %>% 
   distinct(sitename) %>% 
   summarise(n()) %>% 
   arrange(`n()`)
 
-disa %>% # tabulate sites missing disa unique identifiers
+# tabulate sites missing disa unique identifiers
+disa %>% 
   filter(is.na(disa_uid)) %>% 
   group_by(snu) %>% 
   distinct(sitename) %>% 
@@ -215,7 +219,7 @@ drive_put(file_monthly_output_local,
 )
 
 
-# SURVEY ALL MONTHLY DISA DATASETS AND COMPILE ----------------------------
+# SURVEY MONTHLY DATASETS AND COMPILE ----------------------------
 
 
 historic_files <- dir({path_historic_output_local}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
@@ -225,7 +229,8 @@ disa_temp <- historic_files %>%
   reduce(rbind)
 
 
-# JOIN DISA / DATIM MAP TO COMPILED FILE ---------
+# JOIN DISA MAPPING -------------------------------------------------------
+
 
 
 disa_meta <- disa_temp %>% 
@@ -241,8 +246,7 @@ disa_meta %>%
   summarise(n())
 
 
-#---- FILTER OUT ROWS WITHOUT DATIM UID AND GROUP DATA -------------------------------
-
+# REMOVE ROWS WITHOUT DATIM UID & CLEAN -----------------------------------
 
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
@@ -290,25 +294,26 @@ sum(disa_final$VL, na.rm = T)
 sum(disa_missing$VL, na.rm = T)
 
 
-# GRAPH HISTORIC DATA FOR QC ----------------------------------------------
+# PLOT HISTORIC DATA ----------------------------------------------
 
 df_vl_plot <- disa_final %>% 
-  filter(group == "Age") %>% 
-  group_by(period, partner, snu) %>% 
+  filter(!is.na(group)) %>% 
+  group_by(period, group, partner, snu) %>% 
   summarize(VL = sum(VL, na.rm = T)) %>% 
   ungroup()
 
 df_vl_plot %>% 
-  ggplot(aes(x = period, y = VL, fill = partner)) + 
+  ggplot(aes(x = period, y = VL, fill = snu)) + 
   geom_col() + 
   labs(title = "TX_CURR Trend by Partner",
        subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
        color = "Partner") + 
   theme_solarized() + 
-  theme(axis.title = element_text())
+  theme(axis.title = element_text()) + 
+  facet_wrap(~group)
 
 
-# PRINT OUTPUTS TO DISK ------------------------------------------------------
+# PRINT HISTORIC OUTPUTS ------------------------------------------------------
 
 
 write.xlsx(disa_missing,
