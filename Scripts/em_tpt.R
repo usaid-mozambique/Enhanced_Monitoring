@@ -125,7 +125,7 @@ tpt_tidy <- tpt %>%
          TPT_active_complete = TX_CURR_W_TPT_last7Mo + TX_CURR_TPT_Com) %>%
   pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
   mutate(indicator = attribute) %>%
-  mutate(indicator = dplyr::recode(indicator,
+  mutate(indicator = recode(indicator,
                                    "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
                                    "TX_CURR_TB_tto" = "Recent Active TB TX",
                                    "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
@@ -142,6 +142,7 @@ tpt_tidy <- tpt %>%
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
+
 # write to local
 readr::write_tsv(
   tpt_tidy,
@@ -153,40 +154,6 @@ drive_put(path_monthly_output_file,
           path = path_monthly_output_gdrive,
           name = glue({file}, '.csv'))
 
-
-#---- SURVEY AND COMBINE ALL MONTHLY TPT DATASETS TO BUILD HISTORIC DATASET ---------------------------------
-
-
-# historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-# 
-# chr_files <- historic_files[historic_files %in% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
-# non_chr_files <- historic_files[historic_files %ni% c("TPT_2021_03.csv", "TPT_2021_04.csv")]
-# 
-# temp_chr_files <- chr_files %>%
-#   map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
-#   reduce(rbind) %>% 
-#   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
-# 
-# temp_non_chr_files <- non_chr_files %>%
-#   map(~ read_csv(file.path(path_monthly_output_repo, .))) %>%
-#   reduce(rbind) %>% 
-#   mutate(Period = as.Date(Period, "%d/%m/%Y")) 
-# 
-# tpt_tidy_history <- bind_rows(temp_non_chr_files, temp_chr_files)
-
-
-historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-
-tpt_tidy_history <- historic_files %>%
-  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
-  reduce(rbind) %>% 
-  mutate(Period = as.Date(Period, "%d/%m/%Y")) 
-
-
-# write_tsv(
-#   tpt_tidy_history,
-#   "Dataout/TPT/outdated/TPT_2021_03_2022_06.txt")
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
