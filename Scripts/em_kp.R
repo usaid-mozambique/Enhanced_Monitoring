@@ -1,13 +1,13 @@
 #------- Choose Quarter and FY for Custom Indicator Export -----------------------
 
 #SELECT QUARTER
-Q_choose <- "Q1"
+Q_choose <- "Q4"
 
 #SELECT FY
 FY_choose <- 2022
 
 #Select Reporting period
-Current_Reporting_Month <- 11
+Current_Reporting_Month <- 07
 
 #-----------------------------------------------------------------------------------
 ##  LOAD CORE TIDYVERSE & OTHER PACKAGES
@@ -24,7 +24,7 @@ library(lubridate)
 #Joe's read files
 #setwd("~/")
 
-passos <- read_excel("Data/Passos/PASSOS_FY2022_Tracker_Mensal_Novembro_10122022.xlsx",
+passos <- read_excel("Data/Passos/PASSOS_FY2022_Tracker_Mensal_Julho16082022.xlsx",
                      sheet = "Dados e Metas PC", skip = 2)
 glimpse(passos) #review data structure
 
@@ -133,7 +133,7 @@ passos_format_2 <- passos_format %>%
          reportingperiod = paste(period, Quarter, sep = " ")) %>% 
   
   dplyr::left_join(psnuuid_lookup, by = "PSNU") %>% 
-  dplyr::rename_all(funs(tolower)) %>% 
+  dplyr::rename_with(tolower, .cols = everything()) %>% 
   glimpse()
 
 

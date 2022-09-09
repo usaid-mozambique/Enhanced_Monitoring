@@ -18,18 +18,18 @@ load_secrets()
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
-month <- "2022-06-20"
-file <- "MQ_2022_06"
+month <- "2022-08-20"
+file <- "MQ_2022_08"
 
 
 # do not update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/DoD_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ARIEL_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/CCS_MonthlyEnhancedMonitoringTemplates_FY22_June2022 080722.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ECHO_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/EGPAF_MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/ICAP-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_06/FGH-JUN_22-MonthlyEnhancedMonitoringTemplates_FY22_June2022_July_12_2022.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -423,7 +423,7 @@ cv_tidy_new <- function(filename, ip){
   
 }
 
-# new function to use July '22 forward
+# new function to use July '22 forward (submission should have 174 columns of data)
 cv_tidy_newest <- function(filename, ip){
   
   df <- read_excel(filename, 
@@ -533,22 +533,27 @@ cv_tidy_newest <- function(filename, ip){
 
 # IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
 
-dod <- cv_tidy(DOD, "JHPIEGO-DoD")
-echo <- cv_tidy_new(ECHO, "ECHO")
-fgh <- cv_tidy_new(FGH, "FGH")
-ariel <- cv_tidy_new(ARIEL, "ARIEL")
-icap <- cv_tidy(ICAP, "ICAP")
-ccs <- cv_tidy_new(CCS, "CCS")
-egpaf <- cv_tidy(EGPAF, "EGPAF")
+dod <- cv_tidy_newest(DOD, "JHPIEGO-DoD")
+echo <- cv_tidy_newest(ECHO, "ECHO")
+fgh <- cv_tidy_newest(FGH, "FGH")
+ariel <- cv_tidy_newest(ARIEL, "ARIEL")
+icap <- cv_tidy_newest(ICAP, "ICAP")
+ccs <- cv_tidy_newest(CCS, "CCS")
+egpaf <- cv_tidy_newest(EGPAF, "EGPAF")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 cv_tidy <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
 
+test <- cv_tidy %>% 
+  filter(indicator == "cv.pedido.1l")
+
+
 cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
   group_by(Partner) %>% 
   distinct(DATIM_code) %>% 
   summarise(n())
+
 
 rm(echo, fgh, ariel, icap, ccs, egpaf, dod)
 
@@ -568,6 +573,7 @@ drive_put(path_monthly_output_file,
 
 
 # SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 

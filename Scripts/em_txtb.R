@@ -20,17 +20,17 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "20/07/2022" 
-file <- "TXTB_2022_07"
+month <- "20/08/2022" 
+file <- "TXTB_2022_08"
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_FGH.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets

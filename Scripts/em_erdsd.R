@@ -21,7 +21,7 @@ load_secrets()
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
-path_historic_input_file <- "Data/Ajuda/ERDSD/erdsd.csv"
+path_historic_input_file <- "Data/Ajuda/ERDSD/erdsd_1.csv"
 path_historic_output_file <- "Dataout/em_erdsd.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 

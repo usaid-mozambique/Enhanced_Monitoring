@@ -20,17 +20,17 @@ load_secrets()
 # DEFINE VALUES AND PATHS ---------------------------
 
 # update each month
-month <- "2022-07-20" 
-file <- "TPT_2022_07"
+month <- "2022-08-20" 
+file <- "TPT_2022_08"
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_07/MonthlyEnhancedMonitoringTemplates_FY22_July2022_FGH.xlsx"
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
+ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
+CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
+EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
+ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
+FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -74,7 +74,7 @@ tpt_reshape <- function(filename, ip){
                                  "numeric", "text", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
-                                 "numeric"),
+                                 "text"),
                    skip = 7) %>%
     select(c(No,
              Partner,
@@ -111,9 +111,13 @@ icap <- tpt_reshape(ICAP, "ICAP")
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
-
 tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
+
+# detect lines not coded with datim_uids
+tpt %>% 
+  filter(is.na(DATIM_code)) %>% 
+  distinct(DATIM_code, Province, District, `Health Facility`)
 
 
 # CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES ---------------------
@@ -155,6 +159,17 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.csv'))
 
 
+#---- DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+
+#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+
+tpt_tidy_history <- historic_files %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
+  reduce(rbind) 
+
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
 
@@ -194,6 +209,13 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
          attribute,
          value) %>% 
   glimpse()
+
+tpt_tidy_history_2 %>% 
+  distinct(partner)
+
+
+temp <- tpt_tidy_history_2 %>% 
+  filter(is.na(partner))
 
 
 # WRITE FINAL OUTPUT TO DISK ----------------------------------------------
