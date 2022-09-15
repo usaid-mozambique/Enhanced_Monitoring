@@ -25,7 +25,7 @@ month <- "2022-08-20"
 dt <- base::format(as.Date(month), 
                     "%Y_%m")
 
-file <- "TPT_2022_08"
+file <- glue::glue("TPT_{dt}")
 
 # Global Functions --------------------------------------------------------
 
