@@ -2,7 +2,6 @@ rm(list = ls())
 
 # DEPENDENCIES ------------------------------------------------------------
 
-
 library(tidyverse)
 library(glamr)
 library(googlesheets4)
@@ -16,21 +15,81 @@ library(glue)
 library(gt)
 load_secrets() 
 
+# SET GLOBAL VARS --------------------------------------------------------------
 
-# DEFINE VALUES AND PATHS ---------------------------
+#set directory to data folder so that you dont have to call the whole path
+data_folder <- "Data/Ajuda/ER_DSD_TPT_VL/"
 
 # update each month
 month <- "2022-08-20" 
+dt <- base::format(as.Date(month), 
+                    "%Y_%m")
+
 file <- "TPT_2022_08"
 
+# Global Functions --------------------------------------------------------
+
+#MAKE DATE FOLDER
+create_date_folder <- function (folder = "Data/Ajuda/ER_DSD_TPT_VL", dt = NULL) {
+  
+  #store as a date var and then reformat
+  dt <- as.Date(dt,format = "%Y-%m-%d") 
+  dt <- base::format(dt, 
+                     "%Y_%m")
+  
+  #grab current date if no date specified
+  curr_dt <- ifelse(is.null(dt), base::format(base::Sys.Date(), 
+                                              "%Y_%m"), dt)
+  #create base directory if it doesnt exist
+  if (!base::dir.exists(file.path(".", folder))) 
+    base::dir.create(file.path(".", folder))
+  dir_curr_proc <- file.path(".", folder) %>% base::file.path(paste0(curr_dt)) #create subfolder for month/year
+  dir_curr_proc %>% base::dir.create()
+}
+
+#GET PARTNER SPECIFIC FILEPATHS
+get_partner_subm <- function(partner) {
+  
+  # glue("{partner}") <<- subm_folder %>% return_latest(glue("{partner}"))
+  assign(substitute(partner), return_latest(folderpath = subm_folder, pattern = glue("{partner}")), envir=.GlobalEnv)
+}
+
+
+# CREATE DIRECTORIES ---------------------------
+
+#create data Ajuda path if not existing
+if (!base::dir.exists(file.path(".", "Data/Ajuda/ER_DSD_TPT_VL"))) {
+  dir.create(file.path("Data/Ajuda"))
+  dir.create(file.path("Data/Ajuda/ER_DSD_TPT_VL"))
+} 
+
+#create a month folder
+#if (!base::dir.exists(data_folder))
+create_date_folder(data_folder, dt = month) 
+
+#Add your submissions to this new folder
+
+#now put it all together and 
+subm_folder <- glue::glue(data_folder, dt, "/") 
+
+#Pull partner files from this reporting period - we can loop if we want
+
+get_partner_subm("CCS")
+get_partner_subm("DOD")
+get_partner_subm("ARIEL")
+get_partner_subm("ECHO")
+get_partner_subm("EGPAF")
+get_partner_subm("ICAP")
+get_partner_subm("FGH")
+
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
+  # DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
+  # ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
+  # CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
+  # ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
+  # EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
+  # ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
+  # FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
