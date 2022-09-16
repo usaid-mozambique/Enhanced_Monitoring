@@ -1,6 +1,8 @@
 rm(list = ls())
 
+
 # DEPENDENCIES ------------------------------------------------------------
+
 
 library(tidyverse)
 library(glamr)
@@ -17,62 +19,66 @@ load_secrets()
 
 # SET GLOBAL VARS --------------------------------------------------------------
 
-#set directory to data folder so that you dont have to call the whole path
-data_folder <- "Data/Ajuda/ER_DSD_TPT_VL/"
-
 # update each month
 month <- "2022-08-20" 
+
+# set directory to data folder
+data_folder <- "Data/Ajuda/ER_DSD_TPT_VL/"
+
+# create value to use as month in output filename
 dt <- base::format(as.Date(month), 
                     "%Y_%m")
 
+# create output filename
 file <- glue::glue("TPT_{dt}")
 
-# Global Functions --------------------------------------------------------
 
-#MAKE DATE FOLDER
+# GLOBAL FUNCTIONS --------------------------------------------------------
+
+# make date folder
 create_date_folder <- function (folder = "Data/Ajuda/ER_DSD_TPT_VL", dt = NULL) {
   
-  #store as a date var and then reformat
+  # store as a date var and then reformat
   dt <- as.Date(dt,format = "%Y-%m-%d") 
   dt <- base::format(dt, 
                      "%Y_%m")
   
-  #grab current date if no date specified
+  # grab current date if no date specified
   curr_dt <- ifelse(is.null(dt), base::format(base::Sys.Date(), 
                                               "%Y_%m"), dt)
-  #create base directory if it doesnt exist
+  # create base directory if it doesn't exist
   if (!base::dir.exists(file.path(".", folder))) 
     base::dir.create(file.path(".", folder))
-  dir_curr_proc <- file.path(".", folder) %>% base::file.path(paste0(curr_dt)) #create subfolder for month/year
+  dir_curr_proc <- file.path(".", folder) %>% base::file.path(paste0(curr_dt)) # create sub-folder for month/year
   dir_curr_proc %>% base::dir.create()
 }
 
-#GET PARTNER SPECIFIC FILEPATHS
+# get partner specific file paths
 get_partner_subm <- function(partner) {
   
   # glue("{partner}") <<- subm_folder %>% return_latest(glue("{partner}"))
-  assign(substitute(partner), return_latest(folderpath = subm_folder, pattern = glue("{partner}")), envir=.GlobalEnv)
+  assign(substitute(partner), return_latest(folderpath = subm_folder, pattern = glue("{partner}")), envir = .GlobalEnv)
 }
 
 
 # CREATE DIRECTORIES ---------------------------
 
-#create data Ajuda path if not existing
+# create data ajuda path if not existing
 if (!base::dir.exists(file.path(".", "Data/Ajuda/ER_DSD_TPT_VL"))) {
   dir.create(file.path("Data/Ajuda"))
   dir.create(file.path("Data/Ajuda/ER_DSD_TPT_VL"))
 } 
 
-#create a month folder
-#if (!base::dir.exists(data_folder))
+# create a month folder
+# if (!base::dir.exists(data_folder))
 create_date_folder(data_folder, dt = month) 
 
-#Add your submissions to this new folder
+# add your submissions to this new folder
 
-#now put it all together and 
+# now put it all together and 
 subm_folder <- glue::glue(data_folder, dt, "/") 
 
-#Pull partner files from this reporting period - we can loop if we want
+# pull partner files from this reporting period - we can loop if we want
 
 get_partner_subm("CCS")
 get_partner_subm("DOD")
