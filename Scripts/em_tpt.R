@@ -117,7 +117,8 @@ rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 # detect lines not coded with datim_uids
 tpt %>% 
   filter(is.na(DATIM_code)) %>% 
-  distinct(DATIM_code, Province, District, `Health Facility`)
+  distinct(DATIM_code, Province, District, `Health Facility`) %>% 
+  anti_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid"))
 
 
 # CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES ---------------------
@@ -130,14 +131,14 @@ tpt_tidy <- tpt %>%
   pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
   mutate(indicator = attribute) %>%
   mutate(indicator = recode(indicator,
-                                   "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
-                                   "TX_CURR_TB_tto" = "Recent Active TB TX",
-                                   "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
-                                   "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
-                                   "TPT_candidates" = "TPT Candidates",
-                                   "TPT_ineligible" = "TPT Ineligible",
-                                   "TX_CURR_TPT_Not_Comp" = "TPT Not Comp",
-                                   "TPT_active_complete" = "TPT Completed/Active"),
+                            "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
+                            "TX_CURR_TB_tto" = "Recent Active TB TX",
+                            "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
+                            "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
+                            "TPT_candidates" = "TPT Candidates",
+                            "TPT_ineligible" = "TPT Ineligible",
+                            "TX_CURR_TPT_Not_Comp" = "TPT Not Comp",
+                            "TPT_active_complete" = "TPT Completed/Active"),
          Period = {month}
   ) %>%
   filter(!indicator %in% c("TX_CURR_Eleg_TPT_Init", "TX_CURR_Eleg_TPT_Comp")) %>%
@@ -268,7 +269,7 @@ tbl <- tpt_tidy_history_2 %>%
   
   tab_header(title = "Mozambique TPT Enhanced Monitoring") %>% 
   tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
-  
+
 
 tbl
 
@@ -294,5 +295,4 @@ sims_indicator <- tpt_tidy_history_2 %>%
 readr::write_tsv(
   sims_indicator,
   "~/GitHub/SIMS/Dataout/tpt_comp.txt")
-  
-  
+
