@@ -87,13 +87,26 @@ df0 <- read_csv(path_historic_input_file) %>%
                       `01-04` = "1-4",
                       `05-09` = "5-9",
                       `>=65` = "65+"),
+         age = case_when(str_detect(indicator, "IMER")  ~ NA_character_,
+                         str_detect(indicator, "ER1")  ~ NA_character_,
+                         str_detect(indicator, "ER4")  ~ NA_character_,
+                         TRUE ~ age),
          pop_type = recode(pop_type,
+                           Pediatrics = "Pediatric",
                            KeyPop = "KP"),
+         pop_type = case_when(age %in% c("<15", "<1", "1-4", "5-9", "10-14", "15+", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "50+", "65+", "Unknown") & indicator %in% c("TX_CURR", "TX_CURR_Previous", "TX_NEW", "MMD") ~ "By Age",
+                              TRUE ~ pop_type), 
          numdenom = recode(numdenom,
                            Numerator = "N",
                            Denominator = "D"),
          numdenom = replace_na(numdenom, "N"))
 
+
+# NEED TO RENAME INDICATORS TO ALIGN WITH NEW
+
+test <- df0 %>% filter(period == "2021-01-20")
+
+test %>% arrange(indicator, sex, age, pop_type) %>% distinct(indicator, sex, age, pop_type, key_pop, numdenom) %>% print(n=150)
 
 # df1 <- df0 %>% 
 #   mutate(row_n = row_number()) %>% 
