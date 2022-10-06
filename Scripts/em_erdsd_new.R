@@ -48,7 +48,6 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 
 # METADATA -----------------------------------------------------------
 
-erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
 
 ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
@@ -129,6 +128,11 @@ imer_reshape <- function(filename, ip){
 
 
 
+
+
+
+erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
+
 df <- read_excel(TEST, 
                  sheet = "TX NEW, TX CURR AND IMER", 
                  skip = 8,
@@ -141,12 +145,12 @@ df <- read_excel(TEST,
   filter(!indicator_new == "remove") %>% 
   separate(indicator_new, 
            c("indicator", "sex", "age", "pop_type", "dispensation", "numdenom", "er_status", "dsd_eligibility"),
-           sep = "//.") %>% 
+           sep = "\\.") %>% 
   mutate(across(everything(), ~ifelse(.=="", NA, as.character(.))),
          value = as.numeric(value),
          period = as.Date(month, "%d/%m/%Y"),
          indicator = str_replace_all(indicator, "\\.", "_"),
-         age = str_replace_all(age, "\\.", "-"),
+         age = str_replace_all(age, "\\_", "-"),
          age = recode(age,
                       "unknown" = "Unknown"),
          sex = recode(sex,
@@ -161,8 +165,8 @@ df <- read_excel(TEST,
                            "MSM" = "KP",
                            "PWID" = "KP",
                            "PPCS" = "KP"),
-         pop_type = case_when(age %in% c("<15", "<1", "1-4", "5-9", "10-14") ~ "Pediatric",
-                              age %in% c("15+", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "50+", "65+") ~ "Adult")) %>% 
+         pop_type = case_when(age %in% c("<15", "<1", "1-4", "5-9", "10-14", "15+", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "50+", "65+", "Unknown") ~ "By Age",
+                              TRUE ~ pop_type)) %>% 
   filter(Partner == "ECHO") %>% 
   select(partner = Partner,
          snu = Province,
@@ -190,7 +194,7 @@ tx_curr_prev <- df %>%
 df <- bind_rows(df, tx_curr_prev)
 
 
-df %>% distinct(indicator, sex, age, pop_type) %>% print(n=150)
+df %>% distinct(indicator, sex, age, pop_type, key_pop, numdenom) %>% print(n=250)
 df %>% distinct(indicator, key_pop, er_status) %>% print(n=150)
 
 test <- df %>% filter(is.na(pop_type)) %>% distinct(indicator, pop_type)
