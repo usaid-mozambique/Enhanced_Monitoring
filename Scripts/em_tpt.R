@@ -1,4 +1,3 @@
-rm(list = ls())
 
 # DEPENDENCIES ------------------------------------------------------------
 
@@ -20,17 +19,24 @@ load_secrets()
 # DEFINE VALUES AND PATHS ---------------------------
 
 # update each month
-month <- "2022-08-20" 
-file <- "TPT_2022_08"
+month <- "2022-09-20" # reporting month
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/"
+
+# do not update each month
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("TPT_{dt}")
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_FGH.xlsx")
+
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -131,7 +137,7 @@ tpt_tidy <- tpt %>%
   pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
   mutate(indicator = attribute) %>%
   mutate(indicator = recode(indicator,
-                            "TX_CURR_W_TPT_last7Mo"= "Actively on TPT", # use to create new indicator
+                            "TX_CURR_W_TPT_last7Mo" = "Actively on TPT", # use to create new indicator
                             "TX_CURR_TB_tto" = "Recent Active TB TX",
                             "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
                             "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
@@ -157,21 +163,21 @@ readr::write_tsv(
 # write to google drive
 drive_put(path_monthly_output_file,
           path = path_monthly_output_gdrive,
-          name = glue({file}, '.csv'))
+          name = glue({file}, '.txt'))
 
 
-#---- DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+# DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# COMPILE SURVEYED DATASETS -----------------------
 
 tpt_tidy_history <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) 
 
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# GENERATE SITE VOLUME METRIC -----------------------
 
 
 volumn_period <- tpt_tidy_history %>% 
@@ -188,7 +194,7 @@ volumn_period <- tpt_tidy_history %>%
   glimpse()
 
 
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
+# FINAL CLEANING -----------------------
 
 
 tpt_tidy_history_2 <- tpt_tidy_history %>%
@@ -214,12 +220,12 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
 tpt_tidy_history_2 %>% 
   distinct(partner)
 
-
+# verify no results attributed to NA partner
 temp <- tpt_tidy_history_2 %>% 
   filter(is.na(partner))
 
 
-# WRITE FINAL OUTPUT TO DISK ----------------------------------------------
+# WRITE FINAL OUTPUTS ----------------------------------------------
 
 # write to local
 readr::write_tsv(
