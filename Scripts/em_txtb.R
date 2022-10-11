@@ -20,17 +20,25 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "20/08/2022" 
-file <- "TXTB_2022_08"
+month <- "2022-09-20" # reporting month
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/"
+
+
+# do not update each month
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("TXTB_{dt}")
+
 
 # update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_FGH.xlsx")
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -67,6 +75,7 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
 
 ajuda_site_map %>% 
   count(adv_disease_phase)
+
 
 # FUNCTIONS ---------------------------------------------
 
@@ -140,7 +149,7 @@ txtb_reshape <- function(filename, ip){
                  names_to = c("indicator", "disaggregate", "sex", "age"), 
                  names_sep = "_", 
                  values_to = "value") %>%
-    mutate(period = as.Date(month, "%d/%m/%Y"),
+    mutate(period = as.Date(month, "%Y-%m-%d"),
            indicator = str_replace_all(indicator, "\\.", "_"),
            age = recode(age, "Unk" = "Unknown"),
            disaggregate = recode(disaggregate, 
@@ -258,6 +267,7 @@ readr::write_tsv(
 # write to google drive
 drive_put(path_historic_output_file,
           path = path_historic_output_gdrive)
+
 
 # PLOTS & TABLES ---------------------------------------------------------------
 
