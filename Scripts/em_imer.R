@@ -24,14 +24,23 @@ month <- "20/09/2022"
 file <- "IMER_2022_09"
 
 # update each month
+month <- "2022-09-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/"
 
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx"
-# ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct 5 2022 Submission_Tete.xlsx"
-# CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx"
-# EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
-# ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
-# FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
+# do not update each month
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("IMER_{dt}")
+
+# update each month
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_FGH.xlsx")
 
 
 # do not update each month
@@ -87,7 +96,7 @@ imer_reshape <- function(filename, ip){
              sep = "\\.") %>% 
     mutate(across(everything(), ~ifelse(.=="", NA, as.character(.))),
            value = as.numeric(value),
-           period = as.Date(month, "%d/%m/%Y"),
+           period = as.Date(month, "%Y-%m-%d"),
            indicator = str_replace_all(indicator, "\\.", "_"),
            age = str_replace_all(age, "\\_", "-"),
            age = recode(age,
@@ -145,18 +154,17 @@ imer_reshape <- function(filename, ip){
 
 dod <- imer_reshape(DOD, "JHPIEGO-DoD")
 echo <- imer_reshape(ECHO, "ECHO")
-# ariel <- imer_reshape(ARIEL, "ARIEL")
-# ccs <- imer_reshape(CCS, "CCS")
-# egpaf <- imer_reshape(EGPAF, "EGPAF")
-# fgh <- imer_reshape(FGH, "FGH")
-# icap <- imer_reshape(ICAP, "ICAP")
+ariel <- imer_reshape(ARIEL, "ARIEL")
+ccs <- imer_reshape(CCS, "CCS")
+egpaf <- imer_reshape(EGPAF, "EGPAF")
+fgh <- imer_reshape(FGH, "FGH")
+icap <- imer_reshape(ICAP, "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 
-# imer <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
-imer <- bind_rows(dod, echo)
+imer <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
@@ -181,14 +189,10 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.txt'))
 
 
-# DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+# SURVEY ALL MONTHLY DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-
-# COMPILE SURVEYED DATASETS -----------------------
-
 
 imer_tidy_historic <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
@@ -198,7 +202,7 @@ imer_tidy_historic <- historic_files %>%
 # METADATA JOIN ---------------------------------
 
 imer_tidy_historic_2 <- imer_tidy_historic %>% 
-  filter(period >= as.Date(month)) %>% 
+  filter(period <= as.Date(month)) %>% 
   select(-c(partner,
             snu,
             psnu,
