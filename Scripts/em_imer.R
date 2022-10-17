@@ -20,10 +20,6 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "20/09/2022" 
-file <- "IMER_2022_09"
-
-# update each month
 month <- "2022-09-20"
 path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/"
 
@@ -242,10 +238,10 @@ imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
 # OUTPUT WRITE ----------------------------------------------
 
 
-write_tsv(
+readr::write_tsv(
   imer_tidy_historic_3,
-  {path_monthly_output_file})
+  "Dataout/em_imer.txt")
 
-write_tsv(
-  imer_tidy_historic_3,
-  {path_historic_output_file})
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
