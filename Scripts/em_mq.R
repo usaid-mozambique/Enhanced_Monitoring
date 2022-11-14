@@ -18,18 +18,26 @@ load_secrets()
 
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
-month <- "2022-08-20"
-file <- "MQ_2022_08"
-
+# update each month
+month <- "2022-10-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
 
 # do not update each month
-DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_DOD.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 ARIEL.xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ECHO.xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("MQ_{dt}")
+
+
+# update each month
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
+
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
@@ -43,13 +51,14 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # LOAD DATASETS -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
   select(orgunituid,
          sisma_id,
          SNU,
          Psnu, 
          Sitename,
-         partner = `IP FY20`) %>% 
+         partner = `IP FY20`,
+         support_ap3) %>% 
   select_all(str_to_lower)
 
 
@@ -544,9 +553,6 @@ egpaf <- cv_tidy_newest(EGPAF, "EGPAF")
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 cv_tidy <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
-
-test <- cv_tidy %>% 
-  filter(indicator == "cv.pedido.1l")
 
 
 cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
