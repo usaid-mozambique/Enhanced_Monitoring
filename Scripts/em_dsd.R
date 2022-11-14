@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-09-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/"
+month <- "2022-10-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -30,13 +30,13 @@ dt <- base::format(as.Date(month),
 file <- glue::glue("DSD_{dt}")
 
 # update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_FGH.xlsx")
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
 
 
 # do not update each month
@@ -50,7 +50,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,

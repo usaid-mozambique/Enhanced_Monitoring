@@ -21,7 +21,7 @@ load_secrets()
 
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
-path_historic_input_file <- "Data/Ajuda/ERDSD/erdsd_1.csv"
+path_historic_input_file <- "Data/Ajuda/ERDSD/AJUDA_transformed_Sep22.txt"
 path_historic_output_file <- "Dataout/em_erdsd.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
@@ -48,9 +48,8 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
 
 
 
-df0 <- read_csv(path_historic_input_file) %>% 
+df0 <- read_tsv(path_historic_input_file) %>% 
   mutate(Months = as.Date(Months, "%d/%m/%Y"))
-
 
 months <- df0 %>% 
   distinct(Months)
@@ -97,9 +96,7 @@ df_tidy <- df0 %>%
          DSD_GAAC = GAAC,
          DSD_AFam = AFam,
          DSD_ClubA = ClubA,
-         DSD_DCom = DComm) %>% 
-  glimpse()
-
+         DSD_DCom = DComm) 
 
 #---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
 
@@ -201,3 +198,4 @@ df_tidy_graph %>%
        color = "Partner") + 
   theme_solarized() + 
   theme(axis.title = element_text())
+

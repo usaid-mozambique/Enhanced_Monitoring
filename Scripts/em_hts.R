@@ -12,12 +12,13 @@ library(readxl)
 library(openxlsx)
 library(glue)
 library(ggthemes)
-
+library(googlesheets4)
+load_secrets()
 
 # DEFINE HFR MONTH --------------------------------------------------------
 
-hfr_month <- "2022-02-01"
-hfr_month_var <- "01/02/2022"
+hfr_month <- "2022-09-01"
+hfr_month_var <- "01/09/2022"
 
 
 ## KEY SISMA SEARCH WORD(S) "ano"
@@ -48,6 +49,8 @@ ats_smi_2020_path <- "Data/MISAU/ATS/ats_smi_2020.csv"
 ats_smi_2021_path <- "Data/MISAU/ATS/ats_smi_2021.csv"
 ats_smi_2022_path <- "Data/MISAU/ATS/ats_smi_2022.csv"
 
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+
 
 # SITE REMOVAL LIST -------------------------------------------------------
 
@@ -56,7 +59,7 @@ site_removal_list <- "abg5UReivZX"
 # LOAD METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx") %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,
@@ -456,6 +459,7 @@ ats_smi <- bind_rows(ats_smi_all_1, ats_smi_all_pos_1)
 ats <- bind_rows(ats_results, ats_hist, ats_ci, ats_smi)
 
 
+
 # JOIN METADATA -----------------------------------------------------------
 
 
@@ -487,6 +491,14 @@ ats_2 <- ats %>%
   pivot_wider(names_from = "indicator", values_from = "value") %>% 
   select(-c(row_n)) %>% 
   glimpse()
+
+
+test <- ats_2 %>% 
+  filter(period > "2022-01-01") %>% 
+  group_by(period) %>% 
+  summarize(HTS_HIST_FIRST, na.rm = T) %>% 
+  ungroup() %>% 
+  count(period, HTS_HIST_FIRST, sort = T)
 
 
 # PRINT DATAFRAME TO DISK -------------------------------------------------
@@ -539,7 +551,7 @@ hfr_2 <- hfr %>%
 
 readr::write_csv(
   hfr_2,
-  "Dataout/HFR/hfr_hts.csv",
+  "Dataout/HFR/hfr_hts_202209.csv",
   na = "0")
 
 test <- hfr_2 %>% 

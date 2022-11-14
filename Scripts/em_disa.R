@@ -21,9 +21,9 @@ library(openxlsx)
 # VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2022-06-20"
-file <- "2022_06"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Junho 2022.xlsx"
+period <- "2022-08-20"
+file <- "2022_08"
+file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Agosto 2022.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"

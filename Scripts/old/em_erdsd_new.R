@@ -1,63 +1,51 @@
-
-# LOAD DEPENDENCIES -------------------------------------------------------
-
-
 rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
+
 
 library(tidyverse)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
-library(ggthemes)
-library(scales)
+library(gt)
+load_secrets() 
 
 
-# DEFINE PATHS FOR INPUTS & OUTPUT ----------------------------------------
+# VALUES & PATHS ---------------------------
+
+# update each month
+month <- "20/09/2022" 
+file <- "IMER_2022_09"
+
+# update each month
+
+DOD <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_DOD.xlsx"
+# ARIEL <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct 5 2022 Submission_Tete.xlsx"
+# CCS <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 CCS.xlsx"
+ECHO <- "Data/Ajuda/ER_DSD_TPT_VL/2022_09/MonthlyEnhancedMonitoringTemplates_FY22_Oct_2022_ECHO.xlsx"
+# EGPAF <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022 EGPAF.xlsx"
+# ICAP <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_ICAP.xlsx"
+# FGH <- "Data/Ajuda/ER_DSD_TPT_VL/2022_08/MonthlyEnhancedMonitoringTemplates_FY22_August2022_FGH.xlsx"
 
 
-erdsd_path <- ("Data/Ajuda/ERDSD/AJUDA_Transformed_Jan22.txt")
-ajuda_meta_path <- ("~/GitHub/AJUDA_Site_Map/Dataout/AJUDA Site Map.xlsx")
-erdsd_output <- ("Dataout/em_erdsd.txt") 
+# do not update each month
+path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
+path_monthly_output_repo <- "Dataout/IMER/monthly_processed/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12bkLnrQNXbKpbyo-zwk9dmxS6NHDyLwU") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_imer.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
+
+# METADATA -----------------------------------------------------------
 
 
-# IMPORT DATASETS ---------------------------------------------------------
-
-
-ajuda_meta <- read_excel({ajuda_meta_path})
-
-df <- read_csv({erdsd_path})
-
-
-# CLEAN IMPORTS -----------------------------------------------------------
-
-
-df_1 <- df %>% 
-  select(-c(...1, 
-            Type,
-            Partner, 
-            Province, 
-            District, 
-            `Health Facility`, 
-            SISMA_code, 
-            Period)) %>% 
-  rename(datim_uid = DATIM_code,
-         period = Months,
-         num_den = NumDen,
-         sex = Sex,
-         age = AgeAsEntered,
-         dsd_eligibility = DSD_Eligibility,
-         patient_type = PatientType,
-         er_status = ER_Status,
-         dispensation = Dispensation,
-         keypop = KeyPop,
-         indicator = Indicator
-         ) %>% 
-  glimpse()
-
-
-ajuda_meta_1 <- ajuda_meta %>%  
+ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
   select(sisma_uid = sisma_id,
          datim_uid =  orgunituid,
          site_nid,
@@ -74,17 +62,157 @@ ajuda_meta_1 <- ajuda_meta %>%
          ovc,
          ycm,
          latitude = Lat,
-         longitude = Long
-         ) %>% 
+         longitude = Long)
+
+erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
+
+
+# FUNCTIONS ---------------------------------------------
+
+
+imer_reshape <- function(filename, ip){
+  
+  df <- read_excel(filename, 
+                   sheet = "TX NEW, TX CURR AND IMER", 
+                   skip = 8,
+                   col_types = "text") %>% 
+    select(!c(No, SISMA_code, Period)) %>% 
+    pivot_longer(TX_NEWTot:I4_ER4_40_RetCalc, 
+                 names_to = "indicator", 
+                 values_to = "value") %>% 
+    inner_join(erdsd_var_mapping, by = "indicator") %>% 
+    filter(!indicator_new == "remove") %>% 
+    separate(indicator_new, 
+             c("indicator", "sex", "age", "pop_type", "dispensation", "numdenom", "er_status", "dsd_eligibility"),
+             sep = "\\.") %>% 
+    mutate(across(everything(), ~ifelse(.=="", NA, as.character(.))),
+           value = as.numeric(value),
+           period = as.Date(month, "%d/%m/%Y"),
+           indicator = str_replace_all(indicator, "\\.", "_"),
+           age = str_replace_all(age, "\\_", "-"),
+           age = recode(age,
+                        "unknown" = "Unknown"),
+           sex = recode(sex,
+                        "M" = "Male",
+                        "F" = "Female"),
+           key_pop = case_when(pop_type == "FSW" ~ "FSW",
+                               pop_type == "MSM" ~ "MSM",
+                               pop_type == "PWID" ~ "PWID",
+                               pop_type == "PPCS" ~ "PPCS"),
+           pop_type = recode(pop_type,
+                             "FSW" = "KP",
+                             "MSM" = "KP",
+                             "PWID" = "KP",
+                             "PPCS" = "KP"),
+           pop_type = case_when(age %in% c("<15", "<1", "1-4", "5-9", "10-14", "15+", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "50+", "65+", "Unknown") ~ "By Age",
+                                TRUE ~ pop_type),
+           numdenom = replace_na(numdenom, "N"),
+           er_status = recode(er_status,
+                              "Initiated ART" = NA_character_)) %>% 
+    filter(Partner == ip) %>% 
+    select(partner = Partner,
+           snu = Province,
+           psnu = District,
+           sitename = `Health Facility`,
+           datim_uid = DATIM_code,
+           period,
+           indicator,
+           sex,
+           age,
+           pop_type,
+           key_pop,
+           dispensation,
+           numdenom,
+           er_status,
+           dsd_eligibility,
+           value)
+  
+  tx_curr_prev <- df %>%
+    filter(indicator == "TX_CURR") %>% 
+    mutate(indicator = recode(indicator,
+                              "TX_CURR" = "TX_CURR_Previous"),
+           period = period + months(1))
+  
+  df <- bind_rows(df, tx_curr_prev)
+  
+  return(df)
+  
+}
+
+
+# FUNCTIONS RUN -------------------------------------------------
+
+
+dod <- imer_reshape(DOD, "JHPIEGO-DoD")
+echo <- imer_reshape(ECHO, "ECHO")
+# ariel <- imer_reshape(ARIEL, "ARIEL")
+# ccs <- imer_reshape(CCS, "CCS")
+# egpaf <- imer_reshape(EGPAF, "EGPAF")
+# fgh <- imer_reshape(FGH, "FGH")
+# icap <- imer_reshape(ICAP, "ICAP")
+
+
+# COMPILE IP SUMBISSIONS --------------------------------------------------
+
+
+# imer <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
+imer <- bind_rows(dod, echo)
+rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
+
+# detect lines not coded with datim_uids
+imer %>% 
+  filter(is.na(datim_uid)) %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = c("datim_uid" = "datim_uid"))
+
+
+# WRITE MONTHLY TPT CSV TO DISK ------------------------------------
+
+
+# write to local
+readr::write_tsv(
+  imer,
+  na = "",
+  {path_monthly_output_file})
+
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt'))
+
+
+# DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+
+
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+
+# COMPILE SURVEYED DATASETS -----------------------
+
+
+imer_tidy_historic <- historic_files %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
+  reduce(rbind) 
+
+
+# METADATA JOIN ---------------------------------
+
+imer_tidy_historic_2 <- imer_tidy_historic %>% 
+  filter(period >= as.Date(month)) %>% 
+  select(-c(partner,
+            snu,
+            psnu,
+            sitename)) %>%
+  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>%
   glimpse()
 
 
+# OUTPUT CLEAN -----------------------
 
-# JOIN METADATA --------------------------------------------------------------
 
-df_2 <- df_1 %>% 
-  left_join(ajuda_meta_1, by = "datim_uid") %>% 
-  select(ends_with("uid"),
+imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
+  select(datim_uid,
+         sisma_uid,
          site_nid,
          period,
          partner,
@@ -95,68 +223,25 @@ df_2 <- df_1 %>%
          starts_with("support"),
          starts_with("his"),
          indicator,
-         num_den,
-         patient_type,
-         everything()) %>% 
-  glimpse()
-  
-  
-  # PIVOT WIDE & RENAME --------------------------------------------------------------
-  
-df_3 <- df_2 %>% 
-  mutate(row_n = row_number()) %>% 
-  pivot_wider(names_from = indicator, values_from = value, values_fill = 0) %>% 
-  select(-c(row_n)) %>% 
-  rename(TX_CURR_prev = previous_TX_CURR,
-         TX_MMD = MMD,
-         TX_3MD = `6MDD`,
-         TX_6MD = `3MDD`) %>% 
+         numdenom,
+         pop_type,
+         key_pop,
+         dispensation,
+         er_status,
+         dsd_eligibility,
+         sex,
+         age,
+         value) %>% 
   glimpse()
 
 
-# CALCULATE COLUMN INDICATORS & FILTER TOTAL PATIENT TYPE ---------------------------------------------
+# OUTPUT WRITE ----------------------------------------------
 
-df_4 <- df_3 %>% 
-  mutate(ER1Month_N = case_when(!patient_type == "Total" & num_den == "Numerator" ~ ER1Month),
-         ER1Month_D = case_when(!patient_type == "Total" & num_den == "Denominator" ~ ER1Month),
-         ER1Month_Retained = case_when(!patient_type == "Total" & er_status == "Retained" ~ ER1Month),
-         ER1Month_TransferredOut = case_when(!patient_type == "Total" & er_status == "TransferredOut" ~ ER1Month),
-         ER4Month_N = case_when(!patient_type == "Total" & num_den == "Numerator" ~ ER4Month),
-         ER4Month_D = case_when(!patient_type == "Total" & num_den == "Denominator" ~ ER4Month),
-         ER4Month_Retained = case_when(!patient_type == "Total" & er_status == "Retained" ~ ER4Month),
-         ER4Month_TransferredOut = case_when(!patient_type == "Total" & er_status == "TransferredOut" ~ ER4Month),
-         ER4Month_LTFU = case_when(!patient_type == "Total" & er_status == "LTFU" ~ ER4Month),
-         IMER1_N = case_when(!patient_type == "Total" & num_den == "Numerator" ~ IMER1),
-         IMER1_D = case_when(!patient_type == "Total" & num_den == "Denominator" ~ IMER1),
-         IMER1B_N = case_when(!patient_type == "Total" & num_den == "Numerator" ~ IMER1B),
-         IMER1B_D = case_when(!patient_type == "Total" & num_den == "Denominator" ~ IMER1B),
-         TX_CURR_KP = case_when(patient_type == "KeyPop" ~ TX_CURR),
-         TX_NEW_KP = case_when(patient_type == "KeyPop" ~ TX_NEW),
-         TX_CURR = case_when(!patient_type == "KeyPop" & !patient_type == "Total" ~ TX_CURR),
-         TX_NEW = case_when(!patient_type == "KeyPop" & !patient_type == "Total" ~ TX_NEW),
-         age_coarse = if_else(patient_type %in% c("Pediatrics"), "<15", 
-                             if_else(patient_type %in% c("Adults", "Non-Pregnant Adults", "Pregnant", "Breastfeeding"), "15+", ""))) %>% 
-  filter(!patient_type == "Total") %>% 
-  glimpse()
-
-# sum(df_3$TX_CURR, na.rm = T)
-# # sum(df_3$TX_CURR_2, na.rm = T)
-# sum(df_3$TX_NEW, na.rm = T)
-# # sum(df_3$TX_NEW_2, na.rm = T)
-
-
-# FINAL CLEANING ----------------------------------------------------------
-
-
-df_5 <- df_4 %>% 
-  relocate(age_coarse, .after =  age) %>% 
-  relocate(starts_with("TX"), .after = keypop) %>% 
-  relocate(starts_with(c("ER1Month", "ER4Month", "IMER")), .after = TX_NEW_KP) %>% 
-  glimpse()
-
-# PRINT TO DISK -----------------------------------------------------------
 
 write_tsv(
-  df_5,
-  {erdsd_output})
+  imer_tidy_historic_3,
+  {path_monthly_output_file})
 
+write_tsv(
+  imer_tidy_historic_3,
+  {path_historic_output_file})
