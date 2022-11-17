@@ -11,26 +11,28 @@ library(googlesheets4)
 library(googledrive)
 library(glamr)
 library(glitr)
+library(grabr)
 library(ggthemes)
 library(janitor)
 library(glue)
 library(readxl)
 library(openxlsx)
+library(Wavelength)
 
 
 # VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2022-08-20"
-file <- "2022_08"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Agosto 2022.xlsx"
+period <- "2022-09-20"
+file <- "2022_09"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Setembro 2022.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
 file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
 file_historic_output_local <- "Dataout/em_disa.txt"
 
-
+path_disa_datim_map <- as_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
 
@@ -38,13 +40,30 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # DATA LOAD, MUNGE & COMPILE -------------------------------------------------------
 
 
-disa_datim_map <- read_excel("Documents/disa_datim_map_JUNHO022022.xlsx") %>%
-  select(DISA_ID, 
-         sisma_uid = `SISMA DHIS2`, 
-         datim_uid, 
-         ajuda)
+disa_datim_map <- read_sheet(path_disa_datim_map, sheet = "map_disa") %>% 
+  select(!c(note))
 
-datim_ou_map <- read_excel("Documents/tx_site_reference_JUL2022.xlsx")
+ajuda_site_map <- read_sheet(path_disa_datim_map, sheet = "list_ajuda") %>% 
+  select(datim_uid,
+         partner = partner_pepfar_clinical)
+
+
+ou_name <- name <- "Mozambique"
+ou_uid <- get_ouuid(operatingunit = ou_name)
+org_level <- get_ouorglevel(operatingunit = ou_name, org_type =  c("facility"))
+orgsuids <- get_ouorgs(ouuid = ou_uid, level =  org_level)
+
+
+cntry <- "Mozambique"
+uid <- get_ouuid(cntry)
+datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>% 
+  filter(!is.na(facility) & !is.na(psnu)) %>% 
+  select(datim_uid = orgunituid,
+         snu = snu1,
+         psnu,
+         sitename = facility) %>% 
+  arrange(snu, psnu, sitename)
+
 
 # disa by age
 xAge <- read_excel({file_input}, 
@@ -99,10 +118,10 @@ df_tat <- read_excel({file_input},
 
 df_vl <- bind_rows(xAge, xPW, xLW)
 
-# rm(xAge, xPW, xLW)
+rm(xAge, xPW, xLW)
+
 
 # CLEAN VL DATAFRAME ---------------------------------------------------------
-
 
 
 df_vl <- df_vl %>% 
@@ -232,9 +251,9 @@ disa_temp <- historic_files %>%
 # JOIN DISA MAPPING -------------------------------------------------------
 
 
-
 disa_meta <- disa_temp %>% 
-  left_join(disa_datim_map, by = c("disa_uid" = "DISA_ID")) %>% 
+  select(!site_nid) %>% 
+  left_join(disa_datim_map, by = c("disa_uid" = "disa_uid")) %>% 
   mutate(ajuda = replace_na(ajuda, 0)) %>% 
   relocate(c(ajuda, sisma_uid, datim_uid), .before = disa_uid)
 
@@ -254,20 +273,37 @@ disa_final <- disa_meta %>%
   summarise(VL = sum(VL),
             VLS = sum(VLS),
             TAT = sum(TAT)) %>%
-  left_join(datim_ou_map, by = c("datim_uid" = "orgunituid")) %>% 
-  mutate(support_type = case_when(
-    clinical_partner == "MISAU" ~ "Sustainability",
-    TRUE ~ as.character("AJUDA"))) %>% 
+  left_join(datim_orgsuids, by = c("datim_uid" = "datim_uid")) %>%
+  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
+  mutate(
+    partner = replace_na(partner, "MISAU"),
+    support_type = case_when(
+      partner == "MISAU" ~ "Sustainability",
+      TRUE ~ as.character("AJUDA")),
+    agency = case_when(
+      partner == "MISAU" ~ "MISAU",
+      partner == "JHPIEGO-DoD" ~ "DOD",
+      partner == "ECHO" ~ "USAID",
+      TRUE ~ as.character("HHS/CDC")),
+    snu = case_when(
+      partner == "JHPIEGO-DoD" ~ "_Military",
+      TRUE ~ snu),
+    psnu = case_when(
+      partner == "JHPIEGO-DoD" ~ "_Military",
+      TRUE ~ psnu),
+    sitename = case_when(
+      partner == "JHPIEGO-DoD" ~ "_Military",
+      TRUE ~ sitename)) %>% 
   select(period,
          sisma_uid,
          datim_uid,
          site_nid,
-         snu = snu1,
+         snu,
          psnu,
          sitename,
          support_type,
-         partner = clinical_partner,
-         agency = clinical_funding_agency,
+         partner,
+         agency,
          age,
          group,
          sex,
@@ -287,8 +323,7 @@ disa_missing <- disa_meta %>%
          group == "Age") %>% 
   group_by(period, snu, psnu, sitename, disa_uid) %>% 
   summarize(
-    across(c(VL, VLS, TAT), .fns = sum), .groups = "drop"
-  )
+    across(c(VL, VLS, TAT), .fns = sum), .groups = "drop")
 
 sum(disa_final$VL, na.rm = T)
 sum(disa_missing$VL, na.rm = T)
