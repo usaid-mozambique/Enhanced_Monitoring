@@ -4,7 +4,7 @@ rm(list = ls())
 
 
 library(tidyverse)
-library(glamr)
+library(glamr) # lucio needs
 library(googlesheets4)
 library(googledrive)
 library(fs)
@@ -20,8 +20,8 @@ load_secrets()
 # DEFINE VALUES AND PATHS ---------------------------
 
 # update each month
-month <- "2022-10-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 
 # do not update each month
@@ -32,7 +32,7 @@ file <- glue::glue("TPT_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
@@ -51,24 +51,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # LOAD METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
-         site_nid,
-         partner = `IP FY20`,
-         snu = SNU,
-         psnu = Psnu,
-         sitename = Sitename,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 
 # CREATE FUNCTION TPT RESHAPE ---------------------------------------------
@@ -77,12 +60,12 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
 tpt_reshape <- function(filename, ip){
   
   df <- read_excel(filename, sheet = "TPT Completion", 
+                   range = "A8:P650",
                    col_types = c("numeric", 
                                  "text", "text", "text", "text", "text", 
                                  "numeric", "text", "numeric", "numeric", 
                                  "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "text"),
+                                 "numeric", "numeric", "numeric"),
                    skip = 7) %>%
     select(c(No,
              Partner,
@@ -123,9 +106,9 @@ icap <- tpt_reshape(ICAP, "ICAP")
 tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
+
 # detect lines not coded with datim_uids
 tpt %>% 
-  filter(is.na(DATIM_code)) %>% 
   distinct(DATIM_code, Province, District, `Health Facility`) %>% 
   anti_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid"))
 
@@ -171,6 +154,7 @@ drive_put(path_monthly_output_file,
 
 # DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
 
+
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
 
@@ -207,10 +191,12 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
          sisma_uid,
          site_nid,
          period = Period,
-         partner,
+         partner = partner_pepfar_clinical,
          snu,
          psnu,
          sitename,
+         grm_sernap,
+         cop_entry,
          site_volume,
          ends_with("tude"),
          starts_with("support"),
@@ -222,6 +208,8 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
 
 tpt_tidy_history_2 %>% 
   distinct(partner)
+
+# include code to show number of sites by province/partrner reporting by period
 
 
 # WRITE FINAL OUTPUTS ----------------------------------------------
