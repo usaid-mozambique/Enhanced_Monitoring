@@ -25,7 +25,7 @@ library(Wavelength)
 # paths that require updating with each new monthly file
 period <- "2022-09-20"
 file <- "2022_09"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Setembro 2022.xlsx"
+file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Setembro 2022.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
@@ -360,6 +360,7 @@ readr::write_tsv(
   disa_final,
   {file_historic_output_local},
   na = "")
+
 
 drive_put(file_historic_output_local,
           path = path_historic_output_gdrive)

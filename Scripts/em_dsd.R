@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-10-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -31,12 +31,13 @@ file <- glue::glue("DSD_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
 ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
 FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
+
 
 
 # do not update each month
@@ -50,24 +51,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
-         site_nid,
-         partner = `IP FY20`,
-         snu = SNU,
-         psnu = Psnu,
-         sitename = Sitename,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 
 # FUNCTIONS ---------------------------------------------
@@ -133,7 +117,6 @@ rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
 dsd %>% 
-  filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu, psnu, sitename) %>% 
   anti_join(ajuda_site_map, by = c("datim_uid" = "datim_uid"))
 
@@ -166,6 +149,7 @@ dsd_tidy_historic <- historic_files %>%
 
 # METADATA JOIN ---------------------------------
 
+
 dsd_tidy_historic_2 <- dsd_tidy_historic %>% 
   filter(period <= as.Date(month)) %>% 
   select(-c(partner,
@@ -185,19 +169,23 @@ dsd_tidy_historic_3 <- dsd_tidy_historic_2 %>%
          sisma_uid,
          site_nid,
          period,
-         partner,
+         partner = partner_pepfar_clinical,
          snu,
          psnu,
          sitename,
          ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
+         starts_with("program_"),
+         starts_with("his_"),
          indicator,
          pop_type,
          dsd_eligibility,
          age,
          value) %>% 
-  glimpse()
+  mutate(temp_indicator = indicator,
+         temp_value = value) %>% 
+  pivot_wider(
+    names_from = temp_indicator,
+    values_from = temp_value)
 
 
 # OUTPUT WRITE ----------------------------------------------
