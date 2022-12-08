@@ -199,8 +199,8 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
          cop_entry,
          site_volume,
          ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
+         starts_with("program_"),
+         starts_with("his_"),
          indicator,
          attribute,
          value) %>% 

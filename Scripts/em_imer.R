@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-10-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -31,7 +31,7 @@ file <- glue::glue("IMER_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
@@ -50,24 +50,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
-         site_nid,
-         partner = `IP FY20`,
-         snu = SNU,
-         psnu = Psnu,
-         sitename = Sitename,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
 
@@ -165,7 +148,6 @@ rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
 imer %>% 
-  filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu, psnu, sitename) %>% 
   anti_join(ajuda_site_map, by = c("datim_uid" = "datim_uid"))
 
@@ -195,6 +177,12 @@ imer_tidy_historic <- historic_files %>%
   reduce(rbind) 
 
 
+# CALCULATE INDICATORS ----------------------------------------------------
+
+# imer_tidy_historic_2 <- imer_tidy_historic %>% 
+#   mutate
+
+
 # METADATA JOIN ---------------------------------
 
 imer_tidy_historic_2 <- imer_tidy_historic %>% 
@@ -203,8 +191,7 @@ imer_tidy_historic_2 <- imer_tidy_historic %>%
             snu,
             psnu,
             sitename)) %>%
-  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>%
-  glimpse()
+  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) 
 
 
 # OUTPUT CLEAN -----------------------
@@ -215,13 +202,15 @@ imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
          sisma_uid,
          site_nid,
          period,
-         partner,
+         partner = partner_pepfar_clinical,
          snu,
          psnu,
          sitename,
+         grm_sernap,
+         cop_entry,
          ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
+         starts_with("program_"),
+         starts_with("his_"),
          indicator,
          numdenom,
          pop_type,
@@ -232,7 +221,17 @@ imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
          sex,
          age,
          value) %>% 
-  glimpse()
+  mutate(temp_indicator = indicator,
+         temp_value = value) %>% 
+  pivot_wider(
+    names_from = temp_indicator,
+    values_from = temp_value
+  )
+
+
+imer_tidy_historic_3 %>% 
+  filter(indicator == "ER_1_N") %>% 
+  distinct(indicator, er_status)
 
 
 # OUTPUT WRITE ----------------------------------------------

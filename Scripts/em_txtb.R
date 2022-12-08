@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-10-20" # reporting month
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 
 # do not update each month
@@ -33,12 +33,14 @@ file <- glue::glue("TXTB_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
 ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
 FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
+
+
 
 
 # do not update each month
@@ -52,30 +54,32 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 
 # METADATA -----------------------------------------------------------
 
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
+  
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
-         site_nid,
-         partner = `IP FY20`,
-         snu = SNU,
-         psnu = Psnu,
-         sitename = Sitename,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         adv_disease_phase,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
+# ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
+#   select(sisma_uid = sisma_id,
+#          datim_uid =  orgunituid,
+#          site_nid,
+#          partner = `IP FY20`,
+#          snu = SNU,
+#          psnu = Psnu,
+#          sitename = Sitename,
+#          his_epts = epts,
+#          his_emr = emr,
+#          his_idart = idart,
+#          his_disa = disa,
+#          support_ovc = ovc,
+#          support_ycm = ycm,
+#          adv_disease_phase,
+#          ovc,
+#          ycm,
+#          latitude = Lat,
+#          longitude = Long)
 
 
 ajuda_site_map %>% 
-  count(adv_disease_phase)
+  count(program_phase_ahd)
 
 
 # FUNCTIONS ---------------------------------------------
@@ -183,8 +187,8 @@ rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
 txtb %>% 
-  filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu1, psnu, sitename)
+  distinct(datim_uid, snu1, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = c("datim_uid" = "datim_uid"))
 
 
 # MONTHLY FILE WRITE ------------------------------------
@@ -231,17 +235,19 @@ volumn_period <- txtb_tidy_history %>%
 
 
 txtb_tidy_history_2 <- txtb_tidy_history %>%
-  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
+  left_join(ajuda_site_map, by = "datim_uid") %>% 
   left_join(volumn_period) %>% 
   select(datim_uid,
          sisma_uid,
          site_nid,
          period,
-         partner = partner.y,
+         partner = partner_pepfar_clinical,
          snu,
          psnu = psnu.y,
          sitename = sitename.y,
-         adv_disease_phase,
+         grm_sernap,
+         cop_entry,
+         adv_disease_phase = program_phase_ahd,
          site_volume,
          ends_with("tude"),
          starts_with("support"),

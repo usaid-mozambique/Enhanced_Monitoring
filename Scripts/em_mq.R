@@ -19,8 +19,8 @@ load_secrets()
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
 # update each month
-month <- "2022-10-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -31,7 +31,7 @@ file <- glue::glue("MQ_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
@@ -51,7 +51,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # LOAD DATASETS -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>% 
   select(orgunituid,
          sisma_id,
          SNU,
@@ -60,6 +60,16 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
          partner = `IP FY20`,
          support_ap3) %>% 
   select_all(str_to_lower)
+
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda") %>% 
+  select(datim_uid,
+         sisma_uid,
+         site_nid,
+         snu,
+         psnu, 
+         sitename,
+         partner = partner_pepfar_clinical,
+         support_ap = program_ap3)
 
 
 # CREATE FUNCTION TO TIDY CV DATASETS ---------------------------------------------------------
@@ -561,6 +571,12 @@ cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION 
   summarise(n())
 
 
+# detect lines not coded with datim_uids
+cv_tidy %>% 
+  filter(is.na(DATIM_code)) %>% 
+  distinct(DATIM_code, Province, District, `Health Facility`) %>% 
+  anti_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid"))
+
 rm(echo, fgh, ariel, icap, ccs, egpaf, dod)
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
@@ -598,13 +614,11 @@ cv_tidy_historic <- historic_import %>%
             Province,
             District,
             `Health Facility`)) %>%
-  left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>%
+  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>%
   rename(datim_uid = DATIM_code,
-         sisma_uid = sisma_id,
-         sisma_nid = SISMA_code,
          period = month) %>%
   relocate(sisma_uid, .after = datim_uid) %>%
-  relocate(period:partner, .after = sisma_nid) %>%
+  relocate(period:partner, .after = site_nid) %>%
   pivot_wider(names_from =  indicator, values_from = value) %>%
   glimpse()
 
@@ -615,7 +629,6 @@ cv_tidy_historic %>%
   group_by(partner) %>% 
   distinct(datim_uid) %>% 
   summarise(n())
-  glimpse()
 
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------

@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-10-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_10/"
+month <- "2022-11-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -31,12 +31,13 @@ file <- glue::glue("PREP_{dt}")
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ARIEL.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
 CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
 ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
 EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
 ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
 FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
+
 
 
 # do not update each month
@@ -48,6 +49,9 @@ path_historic_output_file <- "Dataout/em_prep.txt" # folder path where monthly d
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
 # METADATA -----------------------------------------------------------
+
+
+ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 
 ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
@@ -204,8 +208,8 @@ rm(dod, echo, ariel, ccs, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
 prep %>% 
-  filter(is.na(`Datim Code`)) %>% 
-  distinct(`Datim Code`, Province, District, `Health Facility`)
+  distinct(`Datim Code`, Province, District, `Health Facility`) %>% 
+  anti_join(ajuda_site_map, by = c("Datim Code" = "datim_uid"))
 
 
 # MONTHLY FILE WRITE ------------------------------------
@@ -257,13 +261,13 @@ prep_tidy_historic_2 <- prep_tidy_historic %>%
          sisma_uid,
          site_nid,
          period,
-         partner,
+         partner = partner_pepfar_clinical,
          snu,
          psnu,
          sitename,
          ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
+         starts_with("program_"),
+         starts_with("his_"),
          pop_type,
          disaggregate,
          sex,
