@@ -30,7 +30,7 @@ dt <- base::format(as.Date(month),
 
 file <- glue::glue("TPT_{dt}")
 
-month_last6 <- as.Date(month) - months(2)
+month_last6 <- as.Date(month) - months(6)
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
@@ -231,7 +231,7 @@ drive_put(path_historic_output_file,
 
 tbl <- tpt_tidy_history_2 %>%
   select(indicator, period, value) %>% 
-  filter(period >= month_last2) %>% 
+  filter(period >= month_last6) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
@@ -263,7 +263,7 @@ tbl <- tpt_tidy_history_2 %>%
     table.font.names = "SourceSansPro-Regular",
     footnotes.font.size = 8) %>% 
   
-  tab_header(title = "Mozambique TPT Enhanced Monitoring") %>% 
+  tab_header(title = "Mozambique TPT Enhanced Monitoring - 6 Month Trend") %>% 
   tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
 
 

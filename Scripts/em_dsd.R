@@ -188,8 +188,6 @@ dsd_tidy_historic_3 <- dsd_tidy_historic_2 %>%
     names_from = temp_indicator,
     values_from = temp_value)
 
-test <- dsd_tidy_historic_3 %>% 
-  mutate(test_date = period - months(2))
   
 # GT TABLES ---------------------------------------------------------------
 
@@ -228,7 +226,7 @@ tbl <- dsd_tidy_historic_3 %>%
     table.font.names = "SourceSansPro-Regular",
     footnotes.font.size = 8) %>% 
   
-  tab_header(title = "Mozambique TPT Enhanced Monitoring - 6 Month Trend") %>% 
+  tab_header(title = "Mozambique DSD Enhanced Monitoring - 6 Month Trend") %>% 
   tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
 
 
