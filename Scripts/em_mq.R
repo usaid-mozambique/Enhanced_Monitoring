@@ -69,7 +69,7 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda") %>%
          psnu, 
          sitename,
          partner = partner_pepfar_clinical,
-         support_ap = program_ap3)
+         program_ap3)
 
 
 # CREATE FUNCTION TO TIDY CV DATASETS ---------------------------------------------------------
@@ -610,6 +610,7 @@ historic_import <- historic_files %>%
 
 cv_tidy_historic <- historic_import %>% 
   select(-c(No,
+            SISMA_code,
             Partner,
             Province,
             District,
@@ -617,7 +618,7 @@ cv_tidy_historic <- historic_import %>%
   left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>%
   rename(datim_uid = DATIM_code,
          period = month) %>%
-  relocate(sisma_uid, .after = datim_uid) %>%
+  relocate(sisma_uid:site_nid, .after = datim_uid) %>%
   relocate(period:partner, .after = site_nid) %>%
   pivot_wider(names_from =  indicator, values_from = value) %>%
   glimpse()

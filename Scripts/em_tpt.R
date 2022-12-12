@@ -30,6 +30,8 @@ dt <- base::format(as.Date(month),
 
 file <- glue::glue("TPT_{dt}")
 
+month_last6 <- as.Date(month) - months(2)
+
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
 ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
@@ -229,6 +231,7 @@ drive_put(path_historic_output_file,
 
 tbl <- tpt_tidy_history_2 %>%
   select(indicator, period, value) %>% 
+  filter(period >= month_last2) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
