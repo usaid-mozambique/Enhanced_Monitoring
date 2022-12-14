@@ -45,7 +45,8 @@ disa_datim_map <- read_sheet(path_disa_datim_map, sheet = "map_disa") %>%
 
 ajuda_site_map <- read_sheet(path_disa_datim_map, sheet = "list_ajuda") %>% 
   select(datim_uid,
-         partner = partner_pepfar_clinical)
+         partner = partner_pepfar_clinical,
+         starts_with("his_"))
 
 
 ou_name <- name <- "Mozambique"
@@ -146,11 +147,10 @@ df_vl <- df_vl %>%
 mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
        age = recode(age, "No Age Specified" = "Unknown Age"),
        age = recode(age, "Não especificada" = "Unknown Age"),
+       age = recode(age, "Não especificado" = "Unknown Age"),
        age = recode(age, "NS" = "Unknown Age"),
        age = recode(age, "<1" = "<01"),
        age = replace_na(age, "Unknown Age"),
-       
-       
        sex = recode(sex, "UNKNOWN" = "Unknown"),
        sex = recode(sex, "Not Specified" = "Unknown"),
        sex = recode(sex, "Não especificado" = "Unknown"),
@@ -298,6 +298,7 @@ disa_final <- disa_meta %>%
          sisma_uid,
          datim_uid,
          site_nid,
+         starts_with("his_"),
          snu,
          psnu,
          sitename,
