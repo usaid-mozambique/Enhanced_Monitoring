@@ -29,6 +29,8 @@ dt <- base::format(as.Date(month),
 
 file <- glue::glue("PREP_{dt}")
 
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
 ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
@@ -54,137 +56,117 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
-         site_nid,
-         partner = `IP FY20`,
-         snu = SNU,
-         psnu = Psnu,
-         sitename = Sitename,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
-
-
 # FUNCTIONS ---------------------------------------------
 
 prep_reshape <- function(filename, ip){
   
-  df <- read_excel(filename, # Function argument
-                   sheet = "Resumo Mensal de PrEP", 
-                   col_types = c("text", 
-                                 "text", "text", "text", "text", "text", 
-                                 "numeric", "text", "text", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric"), 
-                   skip = 7) %>% 
-    filter(Partner == ip) %>%  # Function argument
-    select(!c(Elegible.to.PrEP_All_Total_Total,
-              Elegible.to.PrEP_Casos.Especiais_Male_Total,
-              Elegible.to.PrEP_Casos.Especiais_Female_Total,
-              Elegible.to.PrEP_All_PW_Total,
-              Elegible.to.PrEP_All_LW_Total,
-              PrEP.NEW_All_Total_Total,
-              PrEP.NEW_Casos.Especiais_Male_Total,
-              PrEP.NEW_Casos.Especiais_Female_Total,
-              PrEP.NEW_All_PW_Total,
-              PrEP.NEW_All_LW_Total,
-              PrEP.New.Who.RTT_All_Total_Total,
-              PrEP.New.Who.RTT_Casos.Especiais_Male_Total,
-              PrEP.New.Who.RTT_Casos.Especiais_Female_Total,
-              PrEP.New.Who.RTT_All_PW_Total,
-              PrEP.New.Who.RTT_All_LW_Total,
-              PrEP.CT_All_Total_Total,
-              PrEP.CT_Casos.Especiais_Male_Total,
-              PrEP.CT_Casos.Especiais_Female_Total,
-              PrEP.CT_All_PW_Total,
-              PrEP.CT_All_LW_Total,
-              PrEP.CT.3months_All_Total_Total,
-              PrEP.CT.3months_Casos.Especiais_Male_Total,
-              PrEP.CT.3months_Casos.Especiais_Female_Total,
-              PrEP.CT.3months_All_PW_Total,
-              PrEP.CT.3months_All_LW_Total)) %>%
-    pivot_longer('Elegible.to.PrEP_Casos.Especiais_Male_10.14':'PrEP.CT.3months_TP_People.who.Injected.Drugs_Total', 
-                 names_to = c("indicator", "pop_type", "disaggregate", "age"), 
-                 names_sep = "_", 
-                 values_to = "value") %>%
-    mutate(period = as.Date(month, "%Y-%m-%d"),
-           indicator = str_replace_all(indicator, "\\.", "_"),
-           indicator = str_replace_all(indicator, "Elegible_to_PrEP", "PrEP_Eligible"),
-           indicator = str_replace_all(indicator, "PrEP_New_Who_RTT", "PrEP_NEW_RTT"),
-           age = str_replace_all(age, "\\.", "-"),
-           age = str_replace_all(age, "Total", "Unknown"),
-           sex = case_when(
-             disaggregate == "Female" ~ "Female",
-             disaggregate == "Male" ~ "Male",
-             TRUE ~ as.character("Unknown")),
-           pop_type = recode(pop_type, 
-                             "Casos.Especiais" = "Special Cases",
-                             "TP.AtRisk" = "TP at Risk",
-                             "All" = "PLW"),
-           disaggregate = recode(disaggregate,
-                        "Long.Distance.driver" = "Long Distance Drivers",
-                        "military" = "Military",
-                        "miner" = "Miners",
-                        "People.who.Injected.Drugs" = "PWID",
-                        "Sero.Discordante.Couples" = "Sero-Discordante Couples",
-                        "Sex.workers" = "Sex Workers",
-                        "TG" = "Transgender")) %>% 
-    pivot_wider(names_from =  indicator, values_from = value)
+  df <- readxl::read_excel(filename, # Function argument
+                           sheet = "Resumo Mensal de PrEP", 
+                           col_types = c("text", 
+                                         "text", "text", "text", "text", "text", 
+                                         "numeric", "text", "text", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric"), 
+                           skip = 7) %>% 
+    dplyr::filter(Partner == ip) %>%  # Function argument
+    dplyr::select(!c(Elegible.to.PrEP_All_Total_Total,
+                     Elegible.to.PrEP_Casos.Especiais_Male_Total,
+                     Elegible.to.PrEP_Casos.Especiais_Female_Total,
+                     Elegible.to.PrEP_All_PW_Total,
+                     Elegible.to.PrEP_All_LW_Total,
+                     PrEP.NEW_All_Total_Total,
+                     PrEP.NEW_Casos.Especiais_Male_Total,
+                     PrEP.NEW_Casos.Especiais_Female_Total,
+                     PrEP.NEW_All_PW_Total,
+                     PrEP.NEW_All_LW_Total,
+                     PrEP.New.Who.RTT_All_Total_Total,
+                     PrEP.New.Who.RTT_Casos.Especiais_Male_Total,
+                     PrEP.New.Who.RTT_Casos.Especiais_Female_Total,
+                     PrEP.New.Who.RTT_All_PW_Total,
+                     PrEP.New.Who.RTT_All_LW_Total,
+                     PrEP.CT_All_Total_Total,
+                     PrEP.CT_Casos.Especiais_Male_Total,
+                     PrEP.CT_Casos.Especiais_Female_Total,
+                     PrEP.CT_All_PW_Total,
+                     PrEP.CT_All_LW_Total,
+                     PrEP.CT.3months_All_Total_Total,
+                     PrEP.CT.3months_Casos.Especiais_Male_Total,
+                     PrEP.CT.3months_Casos.Especiais_Female_Total,
+                     PrEP.CT.3months_All_PW_Total,
+                     PrEP.CT.3months_All_LW_Total)) %>%
+    tidyr::pivot_longer('Elegible.to.PrEP_Casos.Especiais_Male_10.14':'PrEP.CT.3months_TP_People.who.Injected.Drugs_Total', 
+                        names_to = c("indicator", "pop_type", "disaggregate", "age"), 
+                        names_sep = "_", 
+                        values_to = "value") %>%
+    dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
+                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
+                  indicator = stringr::str_replace_all(indicator, "Elegible_to_PrEP", "PrEP_Eligible"),
+                  indicator = stringr::str_replace_all(indicator, "PrEP_New_Who_RTT", "PrEP_NEW_RTT"),
+                  age = stringr::str_replace_all(age, "\\.", "-"),
+                  age = stringr::str_replace_all(age, "Total", "Unknown"),
+                  sex = dplyr::case_when(
+                    disaggregate == "Female" ~ "Female",
+                    disaggregate == "Male" ~ "Male",
+                    TRUE ~ as.character("Unknown")),
+                  pop_type = dplyr::recode(pop_type, 
+                                           "Casos.Especiais" = "Special Cases",
+                                           "TP.AtRisk" = "TP at Risk",
+                                           "All" = "PLW"),
+                  disaggregate = dplyr::recode(disaggregate,
+                                               "Long.Distance.driver" = "Long Distance Drivers",
+                                               "military" = "Military",
+                                               "miner" = "Miners",
+                                               "People.who.Injected.Drugs" = "PWID",
+                                               "Sero.Discordante.Couples" = "Sero-Discordante Couples",
+                                               "Sex.workers" = "Sex Workers",
+                                               "TG" = "Transgender")) %>% 
+    tidyr::pivot_wider(names_from =  indicator, values_from = value)
   
 }
 
@@ -276,23 +258,12 @@ prep_tidy_historic_2 <- prep_tidy_historic %>%
   glimpse()
 
 
-# OUTPUT WRITE ----------------------------------------------
-
-# write to local
-readr::write_tsv(
-  prep_tidy_historic_2,
-  "Dataout/em_prep.txt")
-
-# write to google drive
-drive_put(path_historic_output_file,
-          path = path_historic_output_gdrive)
-
-
 # PLOTS & TABLES ---------------------------------------------------------------
 
 tbl <- prep_tidy_historic_2 %>%
   pivot_longer(cols = PrEP_Eligible:PrEP_CT_3months, names_to = "indicator", values_to = "value") %>% 
   select(indicator, period, value) %>% 
+  filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
@@ -324,10 +295,23 @@ tbl <- prep_tidy_historic_2 %>%
     table.font.names = "SourceSansPro-Regular",
     footnotes.font.size = 8) %>% 
   
-  tab_header(title = "Mozambique PrEP Enhanced Monitoring") %>% 
+  tab_header(title = "Mozambique PrEP Enhanced Monitoring - 6 Month Trend") %>% 
   tab_source_note("Source: AJUDA Enhanced Monitoring") 
 
 
 tbl
+
+
+
+# OUTPUT WRITE ----------------------------------------------
+
+# write to local
+readr::write_tsv(
+  prep_tidy_historic_2,
+  "Dataout/em_prep.txt")
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
 

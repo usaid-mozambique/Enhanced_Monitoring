@@ -30,7 +30,7 @@ dt <- base::format(as.Date(month),
 
 file <- glue::glue("TPT_{dt}")
 
-month_last6 <- as.Date(month) - months(6)
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
@@ -61,31 +61,31 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 tpt_reshape <- function(filename, ip){
   
-  df <- read_excel(filename, sheet = "TPT Completion", 
-                   range = "A8:P650",
-                   col_types = c("numeric", 
-                                 "text", "text", "text", "text", "text", 
-                                 "numeric", "text", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric"),
-                   skip = 7) %>%
-    select(c(No,
-             Partner,
-             Province,
-             District,
-             `Health Facility`,
-             DATIM_code,
-             SISMA_code,
-             Period,
-             TX_CURR,
-             TX_CURR_TPT_Com,
-             TX_CURR_TPT_Not_Comp,
-             TX_CURR_TB_tto,
-             TX_CURR_TPT_Not_Comp_POS_Screen,
-             TX_CURR_Eleg_TPT_Comp,
-             TX_CURR_W_TPT_last7Mo,
-             TX_CURR_Eleg_TPT_Init)) %>%
-    filter(Partner == ip)
+  df <- readxl::read_excel(filename, sheet = "TPT Completion", 
+                           range = "A8:P650",
+                           col_types = c("numeric", 
+                                         "text", "text", "text", "text", "text", 
+                                         "numeric", "text", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric"),
+                           skip = 7) %>%
+    dplyr::select(c(No,
+                    Partner,
+                    Province,
+                    District,
+                    `Health Facility`,
+                    DATIM_code,
+                    SISMA_code,
+                    Period,
+                    TX_CURR,
+                    TX_CURR_TPT_Com,
+                    TX_CURR_TPT_Not_Comp,
+                    TX_CURR_TB_tto,
+                    TX_CURR_TPT_Not_Comp_POS_Screen,
+                    TX_CURR_Eleg_TPT_Comp,
+                    TX_CURR_W_TPT_last7Mo,
+                    TX_CURR_Eleg_TPT_Init)) %>%
+    dplyr::filter(Partner == ip)
   
 }
 
@@ -211,19 +211,7 @@ tpt_tidy_history_2 <- tpt_tidy_history %>%
 tpt_tidy_history_2 %>% 
   distinct(partner)
 
-# include code to show number of sites by province/partrner reporting by period
-
-
-# WRITE FINAL OUTPUTS ----------------------------------------------
-
-# write to local
-readr::write_tsv(
-  tpt_tidy_history_2,
-  "Dataout/em_tpt.txt")
-
-# write to google drive
-drive_put(path_historic_output_file,
-          path = path_historic_output_gdrive)
+# include code to show number of sites by province/partner reporting by period
 
 
 # GT TABLES ---------------------------------------------------------------
@@ -231,7 +219,7 @@ drive_put(path_historic_output_file,
 
 tbl <- tpt_tidy_history_2 %>%
   select(indicator, period, value) %>% 
-  filter(period >= month_last6) %>% 
+  filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
@@ -268,6 +256,20 @@ tbl <- tpt_tidy_history_2 %>%
 
 
 tbl
+
+
+
+
+# WRITE FINAL OUTPUTS ----------------------------------------------
+
+# write to local
+readr::write_tsv(
+  tpt_tidy_history_2,
+  "Dataout/em_tpt.txt")
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
 
 # OUTPUT DATASET FOR SIMS PRIOTIZATION ------------------------------------

@@ -28,6 +28,8 @@ dt <- base::format(as.Date(month),
 
 file <- glue::glue("MQ_{dt}")
 
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
@@ -445,107 +447,107 @@ cv_tidy_new <- function(filename, ip){
 # new function to use July '22 forward (submission should have 174 columns of data)
 cv_tidy_newest <- function(filename, ip){
   
-  df <- read_excel(filename, 
-                   sheet = "Monitoria Intensiva",
-                   skip = 9,
-                   col_types = c("text", 
-                                 "text", "text", "text", "text", "text", 
-                                 "text", "text", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric")) %>% 
-    rename(dpi.colheu.pcr_d__all = dpi.colheu.pcr_d_total,
-           dpi.colheu.pcr_n__all = dpi.colheu.pcr_n_total,
-           dpi.pcr.enviado_d__all = dpi.pcr.enviado_d_total,
-           dpi.pcr.enviado_n__all = dpi.pcr.enviado_n_total,
-           dpi.pcr.entregue_d__all = dpi.pcr.entregue_d_total,
-           dpi.pcr.entregue_n__all = dpi.pcr.entregue_n_total,
-           dpi.pcr.tarv_d__all = dpi.pcr.tarv_d_total,
-           dpi.pcr.tarv_n__all = dpi.pcr.tarv_n_total) %>% 
-    pivot_longer('dpi.colheu.pcr_d__all':'mds.cv.estaveis_n_mds', 
-                 names_to = c("indicator", "numdenom", "pop_type", "age"), 
-                 names_sep = "_", 
-                 values_to = "value") %>%
-    filter(!numdenom == "prop",
-           !pop_type == "total") %>% 
-    mutate(age = recode(age,
-                        "menor2" = "<2 Months",
-                        "0.1" = "<1",
-                        "0.2" = "0-2",
-                        "0.4" = "0-4",
-                        "1.4" = "1-4",
-                        "5.9" = "5-9",
-                        "10.14" = "10-14",
-                        "15.19" = "15-19",
-                        "0.14" = "0-14",
-                        "1.14" = "1-14",
-                        "2.14" = "2-14"),
-           numdenom = recode(numdenom,
-                             "n" = "N",
-                             "d" = "D"),
-           pop_type = recode(pop_type,
-                             "all" = "All",
-                             "mg" = "MG",
-                             "ml" = "ML",
-                             "mds" = "MDS"),
-           indicator = paste0(indicator,
-                              if_else(numdenom %in% c("D"), "_D", "")),
-           month ={month}) %>% 
-    filter(Partner == ip) %>% 
-    select(-c(Data))
+  df <- readxl::read_excel(filename, 
+                           sheet = "Monitoria Intensiva",
+                           skip = 9,
+                           col_types = c("text", 
+                                         "text", "text", "text", "text", "text", 
+                                         "text", "text", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric")) %>% 
+    dplyr::rename(dpi.colheu.pcr_d__all = dpi.colheu.pcr_d_total,
+                  dpi.colheu.pcr_n__all = dpi.colheu.pcr_n_total,
+                  dpi.pcr.enviado_d__all = dpi.pcr.enviado_d_total,
+                  dpi.pcr.enviado_n__all = dpi.pcr.enviado_n_total,
+                  dpi.pcr.entregue_d__all = dpi.pcr.entregue_d_total,
+                  dpi.pcr.entregue_n__all = dpi.pcr.entregue_n_total,
+                  dpi.pcr.tarv_d__all = dpi.pcr.tarv_d_total,
+                  dpi.pcr.tarv_n__all = dpi.pcr.tarv_n_total) %>% 
+    tidyr::pivot_longer('dpi.colheu.pcr_d__all':'mds.cv.estaveis_n_mds', 
+                        names_to = c("indicator", "numdenom", "pop_type", "age"), 
+                        names_sep = "_", 
+                        values_to = "value") %>%
+    dplyr::filter(!numdenom == "prop",
+                  !pop_type == "total") %>% 
+    dplyr::mutate(age = dplyr::recode(age,
+                                      "menor2" = "<2 Months",
+                                      "0.1" = "<1",
+                                      "0.2" = "0-2",
+                                      "0.4" = "0-4",
+                                      "1.4" = "1-4",
+                                      "5.9" = "5-9",
+                                      "10.14" = "10-14",
+                                      "15.19" = "15-19",
+                                      "0.14" = "0-14",
+                                      "1.14" = "1-14",
+                                      "2.14" = "2-14"),
+                  numdenom = dplyr::recode(numdenom,
+                                           "n" = "N",
+                                           "d" = "D"),
+                  pop_type = dplyr::recode(pop_type,
+                                           "all" = "All",
+                                           "mg" = "MG",
+                                           "ml" = "ML",
+                                           "mds" = "MDS"),
+                  indicator = paste0(indicator,
+                                     if_else(numdenom %in% c("D"), "_D", "")),
+                  month = {month}) %>% 
+    dplyr::filter(Partner == ip) %>% 
+    dplyr::select(-c(Data))
   
 }
 
@@ -630,6 +632,53 @@ cv_tidy_historic %>%
   group_by(partner) %>% 
   distinct(datim_uid) %>% 
   summarise(n())
+
+
+
+# GT TABLES ---------------------------------------------------------------
+
+
+tbl <- cv_tidy_historic %>%
+  pivot_longer(cols = dpi.colheu.pcr_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
+  select(indicator, period, value) %>% 
+  filter(period >= month_lag6) %>% 
+  arrange((period)) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format = "%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = !c(indicator), 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(220),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique MQ Enhanced Monitoring - 6 Month Trend") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
+
+
+tbl
+
 
 
 # PRINT FINAL OUTPUT TO DISK ----------------------------------------------

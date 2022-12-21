@@ -31,6 +31,9 @@ dt <- base::format(as.Date(month),
 file <- glue::glue("TXTB_{dt}")
 
 
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+
+
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
 ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
@@ -55,28 +58,6 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
-  
-
-# ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "Sheet1") %>%
-#   select(sisma_uid = sisma_id,
-#          datim_uid =  orgunituid,
-#          site_nid,
-#          partner = `IP FY20`,
-#          snu = SNU,
-#          psnu = Psnu,
-#          sitename = Sitename,
-#          his_epts = epts,
-#          his_emr = emr,
-#          his_idart = idart,
-#          his_disa = disa,
-#          support_ovc = ovc,
-#          support_ycm = ycm,
-#          adv_disease_phase,
-#          ovc,
-#          ycm,
-#          latitude = Lat,
-#          longitude = Long)
-
 
 ajuda_site_map %>% 
   count(program_phase_ahd)
@@ -87,80 +68,81 @@ ajuda_site_map %>%
 
 txtb_reshape <- function(filename, ip){
   
-  df <- read_excel(filename, 
-                   sheet = "TX_TB", col_types = c("text", "text", "text",
-                                                  "text", "text", "text", "text", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric", "numeric", "numeric", 
-                                                  "numeric"), skip = 7) %>% 
-    filter(partner == ip) %>%  
-    select(!c(contains(c("remove", "tot")))) %>%
-    pivot_longer('TX.CURR_newART_Male_<15':'TX.TB.CURR.N_alreadyART_Female_Unk', 
-                 names_to = c("indicator", "disaggregate", "sex", "age"), 
-                 names_sep = "_", 
-                 values_to = "value") %>%
-    mutate(period = as.Date(month, "%Y-%m-%d"),
-           indicator = str_replace_all(indicator, "\\.", "_"),
-           age = recode(age, "Unk" = "Unknown"),
-           disaggregate = recode(disaggregate, 
-                                 "newART" = "New on ART",
-                                 "alreadyART" = "Already on ART")) %>% 
-    pivot_wider(names_from =  indicator, values_from = value) %>%
+  df <- readxl::read_excel(filename, 
+                           sheet = "TX_TB", 
+                           col_types = c("text", "text", "text",
+                                         "text", "text", "text", "text", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric"), skip = 7) %>% 
+    dplyr::filter(partner == ip) %>%  
+    dplyr::select(!c(contains(c("remove", "tot")))) %>%
+    tidyr::pivot_longer('TX.CURR_newART_Male_<15':'TX.TB.CURR.N_alreadyART_Female_Unk', 
+                        names_to = c("indicator", "disaggregate", "sex", "age"), 
+                        names_sep = "_", 
+                        values_to = "value") %>%
+    dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
+                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
+                  age = dplyr:recode(age, "Unk" = "Unknown"),
+                  disaggregate = dplyr::recode(disaggregate, 
+                                               "newART" = "New on ART",
+                                               "alreadyART" = "Already on ART")) %>% 
+    tidyr::pivot_wider(names_from =  indicator, values_from = value) %>%
     glimpse()
   
 }
@@ -281,6 +263,7 @@ drive_put(path_historic_output_file,
 
 tbl <- txtb_tidy_history_2 %>%
   pivot_longer(cols = TX_CURR:TX_TB_CURR_N, names_to = "indicator", values_to = "value") %>% 
+  filter(period >= month_lag6) %>% 
   select(indicator, period, value) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
@@ -313,7 +296,7 @@ tbl <- txtb_tidy_history_2 %>%
     table.font.names = "SourceSansPro-Regular",
     footnotes.font.size = 8) %>% 
   
-  tab_header(title = "Mozambique TX_TB Enhanced Monitoring") %>% 
+  tab_header(title = "Mozambique TX_TB Enhanced Monitoring - 6 Month Trend") %>% 
   tab_source_note("Source: AJUDA Enhanced Monitoring") 
 
 

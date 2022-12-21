@@ -19,6 +19,7 @@ load_secrets()
 
 # VALUES & PATHS ---------------------------
 
+
 # update each month
 month <- "2022-11-20"
 path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
@@ -28,7 +29,8 @@ dt <- base::format(as.Date(month),
                    "%Y_%m")
 
 file <- glue::glue("DSD_{dt}")
-month_last6 <- as.Date(month) - months(6)
+
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
@@ -39,8 +41,6 @@ EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates
 ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
 FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
 
-
-
 # do not update each month
 path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
 path_monthly_output_repo <- "Dataout/DSD/monthly_processed/" # folder path where monthly dataset archived
@@ -48,6 +48,7 @@ path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # 
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/15x2biGIIYrY_eW-zrKQbrvMT47cI5yOE") # google drive folder where monthly dataset saved 
 path_historic_output_file <- "Dataout/em_dsd.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
+
 
 # METADATA -----------------------------------------------------------
 
@@ -60,41 +61,41 @@ ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
 dsd_reshape <- function(df, ip) {
   
-  df <- read_excel(df, # function argument
-                   sheet = "MDS", 
-                   skip = 8) %>% 
-    select(!c(No, SISMA_code, Period)) %>% 
-    pivot_longer(remove.1:DSD.AHD__LW_15p, 
-                 names_to = c("indicator", "dsd_eligibility", "pop_type", "age"),
-                 names_sep = "_",
-                 values_to = "value") %>% 
-    filter(Partner == ip, # function argument
-           !str_detect(indicator, "remove")) %>% 
-    mutate(period = as.Date(month, "%Y-%m-%d"),
-           indicator = str_replace_all(indicator, "\\.", "_"),
-           age = str_replace_all(age, "\\.", "-"),
-           age = case_when(age == "15p" ~ "15+",
-                           age == "2u" ~ "<2",
-                           TRUE ~ age),
-           dsd_eligibility = recode(dsd_eligibility,
-                                    ELI = "Eligible",
-                                    NEL = "Non-Eligible",
-                                    TOTAL = NA_character_),
-           pop_type = recode(pop_type, 
-                             ADULT = "Adult",
-                             PED = "Pediatric")) %>% 
-    select(partner = Partner,
-           snu = Province,
-           psnu = District,
-           sitename = `Health Facility`,
-           datim_uid = DATIM_code,
-           period,
-           indicator,
-           dsd_eligibility,
-           pop_type,
-           age,
-           value)
-
+  df <- readxl::read_excel(df, # function argument
+                           sheet = "MDS", 
+                           skip = 8) %>% 
+    dplyr::select(!c(No, SISMA_code, Period)) %>% 
+    tidyr::pivot_longer(remove.1:DSD.AHD__LW_15p, 
+                        names_to = c("indicator", "dsd_eligibility", "pop_type", "age"),
+                        names_sep = "_",
+                        values_to = "value") %>% 
+    dplyr::filter(Partner == ip, # function argument
+                  !str_detect(indicator, "remove")) %>% 
+    dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
+                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
+                  age = stringr::str_replace_all(age, "\\.", "-"),
+                  age = dplyr::case_when(age == "15p" ~ "15+",
+                                         age == "2u" ~ "<2",
+                                         TRUE ~ age),
+                  dsd_eligibility = dplyr::recode(dsd_eligibility,
+                                                  ELI = "Eligible",
+                                                  NEL = "Non-Eligible",
+                                                  TOTAL = NA_character_),
+                  pop_type = dplyr::recode(pop_type, 
+                                           ADULT = "Adult",
+                                           PED = "Pediatric")) %>% 
+    dplyr::select(partner = Partner,
+                  snu = Province,
+                  psnu = District,
+                  sitename = `Health Facility`,
+                  datim_uid = DATIM_code,
+                  period,
+                  indicator,
+                  dsd_eligibility,
+                  pop_type,
+                  age,
+                  value)
+  
 }
 
 
@@ -194,7 +195,7 @@ dsd_tidy_historic_3 <- dsd_tidy_historic_2 %>%
 
 tbl <- dsd_tidy_historic_3 %>%
   select(indicator, period, value) %>% 
-  filter(period >= month_last6) %>% 
+  filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
