@@ -20,8 +20,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-11-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_11/"
+month <- "2022-12-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
 
 
 # do not update each month
@@ -35,13 +35,13 @@ month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
 
 
 # update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov 2022_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_FY22_Nov_2022_FGH.xlsx")
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_FGH.xlsx")
 
 
 
@@ -130,27 +130,25 @@ txtb_reshape <- function(filename, ip){
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric", "numeric", 
                                          "numeric"), skip = 7) %>% 
-    dplyr::filter(partner == ip) %>%  
+    dplyr::filter(partner == ip) %>% 
     dplyr::select(!c(contains(c("remove", "tot")))) %>%
     tidyr::pivot_longer('TX.CURR_newART_Male_<15':'TX.TB.CURR.N_alreadyART_Female_Unk', 
                         names_to = c("indicator", "disaggregate", "sex", "age"), 
                         names_sep = "_", 
-                        values_to = "value") %>%
+                        values_to = "value") %>% 
     dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
                   indicator = stringr::str_replace_all(indicator, "\\.", "_"),
-                  age = dplyr:recode(age, "Unk" = "Unknown"),
+                  age = dplyr::recode(age, "Unk" = "Unknown"),
                   disaggregate = dplyr::recode(disaggregate, 
                                                "newART" = "New on ART",
                                                "alreadyART" = "Already on ART")) %>% 
-    tidyr::pivot_wider(names_from =  indicator, values_from = value) %>%
-    glimpse()
+    tidyr::pivot_wider(names_from =  indicator, values_from = value)
   
 }
 
 
 
 # FUNCTIONS RUN -------------------------------------------------
-
 
 dod <- txtb_reshape(DOD, "JHPIEGO-DoD")
 echo <- txtb_reshape(ECHO, "ECHO")

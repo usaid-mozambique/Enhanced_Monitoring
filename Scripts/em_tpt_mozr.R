@@ -4,6 +4,7 @@ rm(list = ls())
 
 
 library(tidyverse)
+library(mozR)
 library(glamr) # lucio needs
 library(googlesheets4)
 library(googledrive)
@@ -43,7 +44,6 @@ FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates D
 
 
 # do not update each month
-path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
 path_monthly_output_repo <- "Dataout/TPT/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") # google drive folder where monthly dataset saved 
@@ -52,58 +52,23 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 
 # LOAD METADATA -----------------------------------------------------------
 
-
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
-
-
-# CREATE FUNCTION TPT RESHAPE ---------------------------------------------
-
-
-tpt_reshape <- function(filename, ip){
-  
-  df <- readxl::read_excel(filename, sheet = "TPT Completion", 
-                           range = "A8:P650",
-                           col_types = c("numeric", 
-                                         "text", "text", "text", "text", "text", 
-                                         "numeric", "text", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric"),
-                           skip = 7) %>%
-    dplyr::select(c(No,
-                    Partner,
-                    Province,
-                    District,
-                    `Health Facility`,
-                    DATIM_code,
-                    SISMA_code,
-                    Period,
-                    TX_CURR,
-                    TX_CURR_TPT_Com,
-                    TX_CURR_TPT_Not_Comp,
-                    TX_CURR_TB_tto,
-                    TX_CURR_TPT_Not_Comp_POS_Screen,
-                    TX_CURR_Eleg_TPT_Comp,
-                    TX_CURR_W_TPT_last7Mo,
-                    TX_CURR_Eleg_TPT_Init)) %>%
-    dplyr::filter(Partner == ip)
-  
-}
+ajuda_site_map <- pull_sitemap()
 
 
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
 
-
-dod <- tpt_reshape(DOD, "JHPIEGO-DoD")
-echo <- tpt_reshape(ECHO, "ECHO")
-ariel <- tpt_reshape(ARIEL, "ARIEL")
-ccs <- tpt_reshape(CCS, "CCS")
-egpaf <- tpt_reshape(EGPAF, "EGPAF")
-fgh <- tpt_reshape(FGH, "FGH")
-icap <- tpt_reshape(ICAP, "ICAP")
+dod <- reshape_em_tpt(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_tpt(ECHO, "ECHO")
+ariel <- reshape_em_tpt(ARIEL, "ARIEL")
+ccs <- reshape_em_tpt(CCS, "CCS")
+egpaf <- reshape_em_tpt(EGPAF, "EGPAF")
+fgh <- reshape_em_tpt(FGH, "FGH")
+icap <- reshape_em_tpt(ICAP, "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
+
 
 tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
@@ -154,64 +119,23 @@ drive_put(path_monthly_output_file,
           name = glue({file}, '.txt'))
 
 
-# DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
+# HISTORIC DATASET BUILD ---------------------------------
 
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-
-# COMPILE SURVEYED DATASETS -----------------------
 
 tpt_tidy_history <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) 
 
-# GENERATE SITE VOLUME METRIC -----------------------
+
+# JOIN METADATA & CLEAN DATAFRAME -----------------------
 
 
-volumn_period <- tpt_tidy_history %>% 
-  mutate(date = as.Date(Period, format =  "%y/%m/%d")) %>% 
-  select(DATIM_code, date, indicator, value) %>% 
-  filter(date == max(date),
-         indicator == "TX_CURR") %>% 
-  mutate(site_volume = case_when(
-    value < 1000 ~ "Low",
-    between(value, 1000, 5000) ~ "Medium",
-    value > 5000 ~ "High",
-    TRUE ~ "Not Reported")) %>% 
-  select(DATIM_code, site_volume) %>% 
-  glimpse()
-
-
-# FINAL CLEANING -----------------------
-
-
-tpt_tidy_history_2 <- tpt_tidy_history %>%
-  left_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid")) %>% 
-  left_join(volumn_period) %>% 
-  select(datim_uid = DATIM_code,
-         sisma_uid,
-         site_nid,
-         period = Period,
-         partner = partner_pepfar_clinical,
-         snu,
-         psnu,
-         sitename,
-         grm_sernap,
-         cop_entry,
-         site_volume,
-         ends_with("tude"),
-         starts_with("program_"),
-         starts_with("his_"),
-         indicator,
-         attribute,
-         value) %>% 
-  glimpse()
+tpt_tidy_history_2 <- clean_em_tpt(tpt_tidy_history)
 
 tpt_tidy_history_2 %>% 
   distinct(partner)
-
-# include code to show number of sites by province/partner reporting by period
 
 
 # GT TABLES ---------------------------------------------------------------

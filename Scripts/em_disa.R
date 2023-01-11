@@ -23,9 +23,9 @@ library(Wavelength)
 # VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2022-09-20"
-file <- "2022_09"
-file_input <- "Data/Disa_new/monthly/Relatorio de Carga Viral Setembro 2022.xlsx"
+period <- "2022-10-20"
+file <- "2022_10"
+file_input <- "Data/Disa_new/monthly/10_Relatorio Mensal de Carga Viral Outubro 2022.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
@@ -67,57 +67,57 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
 
 
 # disa by age
-xAge <- read_excel({file_input}, 
-                   sheet = "Age & Sex", 
-                   col_types = c("text", "text", "text", "text", "text",
-                                 "text", "text", "text", "text", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric", 
-                                 "numeric", "numeric", "numeric",
-                                 "numeric", "numeric"), 
-                   skip = 2) %>% 
-  mutate(group = "Age") %>%
+xAge <- readxl::read_excel({file_input}, 
+                           sheet = "Age & Sex", 
+                           col_types = c("text", "text", "text", "text", "text",
+                                         "text", "text", "text", "text", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric", 
+                                         "numeric", "numeric", "numeric",
+                                         "numeric", "numeric"), 
+                           skip = 2) %>% 
+  dplyr::mutate(group = "Age") %>%
   glimpse()
 
 # disa pregnant women
-xPW <- read_excel({file_input}, 
-                  sheet = "S. Viral (M. Gravidas)",
-                  col_types = c("text", "text", "text", "text",
-                                "text", "text", "text", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric"), 
-                  skip = 2) %>% 
-  mutate(group = "PW") %>% 
+xPW <- readxl::read_excel({file_input}, 
+                          sheet = "S. Viral (M. Gravidas)",
+                          col_types = c("text", "text", "text", "text",
+                                        "text", "text", "text", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric"), 
+                          skip = 2) %>% 
+  dplyr::mutate(group = "PW") %>% 
   glimpse
 
 # disa lactating women
-xLW <- read_excel({file_input}, 
-                  sheet = "S. Viral (M. Lactantes)",
-                  col_types = c("text", "text", "text", "text",
-                                "text", "text", "text", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric", "numeric", "numeric", 
-                                "numeric"),
-                  skip = 2) %>% 
-  mutate(group = "LW") %>%
+xLW <- readxl::read_excel({file_input}, 
+                          sheet = "S. Viral (M. Lactantes)",
+                          col_types = c("text", "text", "text", "text",
+                                        "text", "text", "text", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric"),
+                          skip = 2) %>% 
+  dplyr::mutate(group = "LW") %>%
   glimpse
 
 
 # disa turn around time
-df_tat <- read_excel({file_input}, 
-                     sheet = "TRL - AVG", 
-                     col_types = c("text", 
-                                   "text", "text", "text", "text", "text", 
-                                   "text", "numeric", "numeric", "numeric", 
-                                   "numeric", "numeric"), 
-                     skip = 2) %>% 
-  select(-c(TOTAL))
+df_tat <- readxl::read_excel({file_input}, 
+                             sheet = "TRL - AVG", 
+                             col_types = c("text", 
+                                           "text", "text", "text", "text", "text", 
+                                           "text", "numeric", "numeric", "numeric", 
+                                           "numeric", "numeric"), 
+                             skip = 2) %>% 
+  dplyr::select(-c(TOTAL))
 
 
-df_vl <- bind_rows(xAge, xPW, xLW)
+df_vl <- dplyr::bind_rows(xAge, xPW, xLW)
 
 rm(xAge, xPW, xLW)
 
@@ -126,54 +126,54 @@ rm(xAge, xPW, xLW)
 
 
 df_vl <- df_vl %>% 
-  select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
-  rename(site_nid = `SISMA ID`,
-         disa_uid = `DISA ID`,
-         snu = PROVINCIA,
-         psnu = DISTRITO,
-         sitename = `U. SANITARIA`,
-         age = Idade,
-         sex = Sexo) %>% 
-  relocate(c(group, disa_uid), .before = sitename) %>% 
-  pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
-  mutate(motive = case_when(grepl("Rotina", indicator) ~ "Routine",
-                                   grepl("Fal", indicator) ~ "Theraputic Failure",
-                                   grepl("Repetir", indicator) ~ "Post Breastfeeding",
-                                   grepl("Motivo de Teste NS", indicator) ~ "Not Specified"),
-         result = case_when(grepl("<1000", indicator) ~ "<1000",
-                                   grepl(">1000", indicator) ~ ">1000"),
-         tat_step = "temp") %>% 
-  select(-c(indicator)) %>% 
-mutate(age = recode(age, "Idade não especificada" = "Unknown Age"),
-       age = recode(age, "No Age Specified" = "Unknown Age"),
-       age = recode(age, "Não especificada" = "Unknown Age"),
-       age = recode(age, "Não especificado" = "Unknown Age"),
-       age = recode(age, "NS" = "Unknown Age"),
-       age = recode(age, "<1" = "<01"),
-       age = replace_na(age, "Unknown Age"),
-       sex = recode(sex, "UNKNOWN" = "Unknown"),
-       sex = recode(sex, "Not Specified" = "Unknown"),
-       sex = recode(sex, "Não especificado" = "Unknown"),
-       sex = recode(sex, "F" = "Female"),
-       sex = recode(sex, "M" = "Male"),
-       sex = replace_na(sex, "Unknown")
-) %>% 
-  filter(value > 0) %>% 
-  mutate(indicator = "VL",
-         period = {period})
+  dplyr::select(-c(`CV < 1000`, `CV > 1000`, TOTAL)) %>%
+  dplyr::rename(site_nid = `SISMA ID`,
+                disa_uid = `DISA ID`,
+                snu = PROVINCIA,
+                psnu = DISTRITO,
+                sitename = `U. SANITARIA`,
+                age = Idade,
+                sex = Sexo) %>% 
+  dplyr::relocate(c(group, disa_uid), .before = sitename) %>% 
+  tidyr::pivot_longer(`Rotina (<1000)`:`Motivo de Teste não especificado (>1000)`, names_to = "indicator", values_to = "value") %>% 
+  dplyr::mutate(motive = dplyr::case_when(grepl("Rotina", indicator) ~ "Routine",
+                                          grepl("Fal", indicator) ~ "Theraputic Failure",
+                                          grepl("Repetir", indicator) ~ "Post Breastfeeding",
+                                          grepl("Motivo de Teste NS", indicator) ~ "Not Specified"),
+                result = dplyr::case_when(grepl("<1000", indicator) ~ "<1000",
+                                          grepl(">1000", indicator) ~ ">1000"),
+                tat_step = "temp") %>% 
+  dplyr::select(-c(indicator)) %>% 
+  dplyr::mutate(age = dplyr::recode(age, "Idade não especificada" = "Unknown Age"),
+                age = dplyr::recode(age, "No Age Specified" = "Unknown Age"),
+                age = dplyr::recode(age, "Não especificada" = "Unknown Age"),
+                age = dplyr::recode(age, "Não especificado" = "Unknown Age"),
+                age = dplyr::recode(age, "NS" = "Unknown Age"),
+                age = dplyr::recode(age, "<1" = "<01"),
+                age = tidyr::replace_na(age, "Unknown Age"),
+                sex = dplyr::recode(sex, "UNKNOWN" = "Unknown"),
+                sex = dplyr::recode(sex, "Not Specified" = "Unknown"),
+                sex = dplyr::recode(sex, "Não especificado" = "Unknown"),
+                sex = dplyr::recode(sex, "F" = "Female"),
+                sex = dplyr::recode(sex, "M" = "Male"),
+                sex = tidyr::replace_na(sex, "Unknown")
+  ) %>% 
+  dplyr::filter(value > 0) %>% 
+  dplyr::mutate(indicator = "VL",
+                period = {period})
 
 
 # CLEAN TAT DATAFRAME -----------------------------------------------------
 
 
 df_tat <- df_tat %>% 
-  rename(site_nid = `SISMA ID`,
+  dplyr::rename(site_nid = `SISMA ID`,
          disa_uid = `DISA ID`,
          snu = PROVINCIA,
          psnu = DISTRITO,
          sitename = `U. SANITARIA`) %>% 
-  pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
-  mutate(tat_step = recode(tat_step, 
+  tidyr::pivot_longer((`COLHEITA À RECEPÇÃO`:`ANÁLISE À VALIDAÇÃO`), names_to = "tat_step", values_to = "value") %>% 
+  dplyr::mutate(tat_step = dplyr::recode(tat_step, 
                            "COLHEITA À RECEPÇÃO" = "S1: Collection to Receipt",
                            "RECEPÇÃO AO REGISTO" = "S2: Receipt to Registration",
                            "REGISTO À ANÁLISE" = "S3: Registration to Analysis",
@@ -182,30 +182,29 @@ df_tat <- df_tat %>%
          period = {period})
 
 
-disa_vl <- bind_rows(df_vl, df_tat)
+disa_vl <- dplyr::bind_rows(df_vl, df_tat)
 
 
 # SUBSET VLS DATAFRAME ------------------------------------------------------
 
 
 disa_vls <- disa_vl %>% 
-  filter(result == "<1000") %>% 
-  mutate(indicator = "VLS")
+  dplyr::filter(result == "<1000") %>% 
+  dplyr::mutate(indicator = "VLS")
 
 
 # DATAFRAME COMPILE, GROUP, & PIVOT WIDE ----------------------------------
 
 
-disa <- bind_rows(disa_vl, disa_vls) %>% 
-  mutate(row = row_number(),
-         tat_step = na_if(tat_step, "temp")) %>% 
-  pivot_wider(names_from = indicator, values_from = value, values_fill = NULL) %>% 
-  group_by(period, snu, psnu, sitename, disa_uid, site_nid, age, group, sex, motive, tat_step) %>%
-  summarise(VL = sum(VL, na.rm = T),
+disa <- dplyr::bind_rows(disa_vl, disa_vls) %>% 
+  dplyr::mutate(row = row_number(),
+         tat_step = dplyr::na_if(tat_step, "temp")) %>% 
+  tidyr::pivot_wider(names_from = indicator, values_from = value, values_fill = NULL) %>% 
+  dplyr::group_by(period, snu, psnu, sitename, disa_uid, site_nid, age, group, sex, motive, tat_step) %>%
+  dplyr::summarise(VL = sum(VL, na.rm = T),
             VLS = sum(VLS, na.rm = T),
             TAT = sum(TAT, na.rm = T)) %>%
-  ungroup() %>% 
-  glimpse()
+  dplyr::ungroup()
 
 # tabulate sites that have viral load results reported
 disa %>% 
