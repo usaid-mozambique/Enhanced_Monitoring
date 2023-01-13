@@ -4,6 +4,7 @@ rm(list = ls())
 
 
 library(tidyverse)
+library(mozR)
 library(glamr)
 library(googlesheets4)
 library(googledrive)
@@ -53,62 +54,19 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
-
-
-# FUNCTIONS ---------------------------------------------
-
-
-dsd_reshape <- function(df, ip) {
-  
-  df <- readxl::read_excel(df, # function argument
-                           sheet = "MDS", 
-                           skip = 8) %>% 
-    dplyr::select(!c(No, SISMA_code, Period)) %>% 
-    tidyr::pivot_longer(remove.1:DSD.AHD__LW_15p, 
-                        names_to = c("indicator", "dsd_eligibility", "pop_type", "age"),
-                        names_sep = "_",
-                        values_to = "value") %>% 
-    dplyr::filter(Partner == ip, # function argument
-                  !str_detect(indicator, "remove")) %>% 
-    dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
-                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
-                  age = stringr::str_replace_all(age, "\\.", "-"),
-                  age = dplyr::case_when(age == "15p" ~ "15+",
-                                         age == "2u" ~ "<2",
-                                         TRUE ~ age),
-                  dsd_eligibility = dplyr::recode(dsd_eligibility,
-                                                  ELI = "Eligible",
-                                                  NEL = "Non-Eligible",
-                                                  TOTAL = NA_character_),
-                  pop_type = dplyr::recode(pop_type, 
-                                           ADULT = "Adult",
-                                           PED = "Pediatric")) %>% 
-    dplyr::select(partner = Partner,
-                  snu = Province,
-                  psnu = District,
-                  sitename = `Health Facility`,
-                  datim_uid = DATIM_code,
-                  period,
-                  indicator,
-                  dsd_eligibility,
-                  pop_type,
-                  age,
-                  value)
-  
-}
+ajuda_site_map <- pull_sitemap()
 
 
 # FUNCTIONS RUN -------------------------------------------------
 
 
-dod <- dsd_reshape(DOD, "JHPIEGO-DoD")
-echo <- dsd_reshape(ECHO, "ECHO")
-ariel <- dsd_reshape(ARIEL, "ARIEL")
-ccs <- dsd_reshape(CCS, "CCS")
-egpaf <- dsd_reshape(EGPAF, "EGPAF")
-fgh <- dsd_reshape(FGH, "FGH")
-icap <- dsd_reshape(ICAP, "ICAP")
+dod <- reshape_em_dsd(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_dsd(ECHO, "ECHO")
+ariel <- reshape_em_dsd(ARIEL, "ARIEL")
+ccs <- reshape_em_dsd(CCS, "CCS")
+egpaf <- reshape_em_dsd(EGPAF, "EGPAF")
+fgh <- reshape_em_dsd(FGH, "FGH")
+icap <- reshape_em_dsd(ICAP, "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
@@ -152,42 +110,45 @@ dsd_tidy_historic <- historic_files %>%
 # METADATA JOIN ---------------------------------
 
 
-dsd_tidy_historic_2 <- dsd_tidy_historic %>% 
-  filter(period <= as.Date(month)) %>% 
-  select(-c(partner,
-            snu,
-            psnu,
-            sitename)) %>%
-  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>%
-  glimpse()
+clean_em_dsd <- function(df){
+  
+  df_cleaned <- df %>% 
+    dplyr::filter(period <= as.Date(month)) %>% 
+    dplyr::select(-c(partner,
+                     snu,
+                     psnu,
+                     sitename)) %>%
+    dplyr::left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>%
+    dplyr::select(datim_uid,
+                  sisma_uid,
+                  site_nid,
+                  period,
+                  partner = partner_pepfar_clinical,
+                  snu,
+                  psnu,
+                  sitename,
+                  ends_with("tude"),
+                  starts_with("program_"),
+                  starts_with("his_"),
+                  indicator,
+                  pop_type,
+                  dsd_eligibility,
+                  age,
+                  value) %>% 
+    dplyr::mutate(temp_indicator = indicator,
+                  temp_value = value) %>% 
+    tidyr::pivot_wider(
+      names_from = temp_indicator,
+      values_from = temp_value)
+  
+  return(df_cleaned)
+  
+}
 
 
+dsd_tidy_historic_2 <- clean_em_dsd(dsd_tidy_historic)
 
-# OUTPUT CLEAN -----------------------
 
-
-dsd_tidy_historic_3 <- dsd_tidy_historic_2 %>%
-  select(datim_uid,
-         sisma_uid,
-         site_nid,
-         period,
-         partner = partner_pepfar_clinical,
-         snu,
-         psnu,
-         sitename,
-         ends_with("tude"),
-         starts_with("program_"),
-         starts_with("his_"),
-         indicator,
-         pop_type,
-         dsd_eligibility,
-         age,
-         value) %>% 
-  mutate(temp_indicator = indicator,
-         temp_value = value) %>% 
-  pivot_wider(
-    names_from = temp_indicator,
-    values_from = temp_value)
 
   
 # GT TABLES ---------------------------------------------------------------

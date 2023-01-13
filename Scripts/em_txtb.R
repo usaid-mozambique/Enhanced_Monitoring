@@ -4,6 +4,7 @@ rm(list = ls())
 
 
 library(tidyverse)
+library(mozR)
 library(glamr)
 library(googlesheets4)
 library(googledrive)
@@ -44,10 +45,7 @@ ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates 
 FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_FGH.xlsx")
 
 
-
-
 # do not update each month
-path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
 path_monthly_output_repo <- "Dataout/TXTB/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zKg8l6bmO_6uk9GoOmxYsAWP3msHtjB3") # google drive folder where monthly dataset saved 
@@ -57,110 +55,21 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 
 # METADATA -----------------------------------------------------------
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
 
-ajuda_site_map %>% 
-  count(program_phase_ahd)
-
-
-# FUNCTIONS ---------------------------------------------
-
-
-txtb_reshape <- function(filename, ip){
-  
-  df <- readxl::read_excel(filename, 
-                           sheet = "TX_TB", 
-                           col_types = c("text", "text", "text",
-                                         "text", "text", "text", "text", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric", "numeric", "numeric", 
-                                         "numeric"), skip = 7) %>% 
-    dplyr::filter(partner == ip) %>% 
-    dplyr::select(!c(contains(c("remove", "tot")))) %>%
-    tidyr::pivot_longer('TX.CURR_newART_Male_<15':'TX.TB.CURR.N_alreadyART_Female_Unk', 
-                        names_to = c("indicator", "disaggregate", "sex", "age"), 
-                        names_sep = "_", 
-                        values_to = "value") %>% 
-    dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
-                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
-                  age = dplyr::recode(age, "Unk" = "Unknown"),
-                  disaggregate = dplyr::recode(disaggregate, 
-                                               "newART" = "New on ART",
-                                               "alreadyART" = "Already on ART")) %>% 
-    tidyr::pivot_wider(names_from =  indicator, values_from = value)
-  
-}
-
+ajuda_site_map <- pull_sitemap()
 
 
 # FUNCTIONS RUN -------------------------------------------------
 
-dod <- txtb_reshape(DOD, "JHPIEGO-DoD")
-echo <- txtb_reshape(ECHO, "ECHO")
-ariel <- txtb_reshape(ARIEL, "ARIEL")
-ccs <- txtb_reshape(CCS, "CCS")
-egpaf <- txtb_reshape(EGPAF, "EGPAF")
-fgh <- txtb_reshape(FGH, "FGH")
-icap <- txtb_reshape(ICAP, "ICAP")
-
+dod <- reshape_em_txtb(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_txtb(ECHO, "ECHO")
+ariel <- reshape_em_txtb(ARIEL, "ARIEL")
+ccs <- reshape_em_txtb(CCS, "CCS")
+egpaf <- reshape_em_txtb(EGPAF, "EGPAF")
+fgh <- reshape_em_txtb(FGH, "FGH")
+icap <- reshape_em_txtb(ICAP, "ICAP")
 
 # COMPILE DATASETS --------------------------------------------------
-
 
 txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
@@ -194,49 +103,9 @@ txtb_tidy_history <- historic_files %>%
   reduce(rbind)
 
 
-# HF VOLUME CALCULATE -----------------------
+# JOIN METADATA & CLEAN DATAFRAME -----------------------
 
-
-volumn_period <- txtb_tidy_history %>% 
-  select(datim_uid, period, TX_CURR) %>%
-  filter(period == max(period)) %>% 
-  group_by(datim_uid, .drop = TRUE) %>% 
-  summarize(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>%
-  mutate(site_volume = case_when(
-    TX_CURR < 1000 ~ "Low",
-    between(TX_CURR, 1000, 5000) ~ "Medium",
-    TX_CURR > 5000 ~ "High",
-    TRUE ~ "Not Reported")) %>% 
-  select(datim_uid, site_volume) %>% 
-  glimpse()
-
-
-# METADATA JOIN -----------------------
-
-
-txtb_tidy_history_2 <- txtb_tidy_history %>%
-  left_join(ajuda_site_map, by = "datim_uid") %>% 
-  left_join(volumn_period) %>% 
-  select(datim_uid,
-         sisma_uid,
-         site_nid,
-         period,
-         partner = partner_pepfar_clinical,
-         snu,
-         psnu = psnu.y,
-         sitename = sitename.y,
-         grm_sernap,
-         cop_entry,
-         adv_disease_phase = program_phase_ahd,
-         site_volume,
-         ends_with("tude"),
-         starts_with("support"),
-         starts_with("his"),
-         sex,
-         age,
-         disaggregate,
-         starts_with("TX_")) %>% 
-  glimpse()
+txtb_tidy_history_2 <- clean_em_txtb(txtb_tidy_history)
 
 # detect lines not coded with datim_uids
 txtb_tidy_history_2 %>% 

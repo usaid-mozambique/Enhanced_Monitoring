@@ -4,6 +4,7 @@ rm(list = ls())
 
 
 library(tidyverse)
+library(mozR)
 library(glamr)
 library(googlesheets4)
 library(googledrive)
@@ -42,7 +43,6 @@ FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates D
 
 
 # do not update each month
-path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U") # path for fetching ajuda site map in google sheets
 path_monthly_output_repo <- "Dataout/IMER/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12bkLnrQNXbKpbyo-zwk9dmxS6NHDyLwU") # google drive folder where monthly dataset saved 
@@ -52,94 +52,22 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 # METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map, sheet = "list_ajuda")
+ajuda_site_map <- pull_sitemap()
 
 erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
 
-
-# FUNCTIONS ---------------------------------------------
-
-
-imer_reshape <- function(filename, ip){
-  
-  df <- readxl::read_excel(filename, 
-                           sheet = "TX NEW, TX CURR AND IMER", 
-                           skip = 8,
-                           col_types = "text") %>% 
-    dplyr::select(!c(No, SISMA_code, Period)) %>% 
-    tidyr::pivot_longer(TX_NEWTot:I4_ER4_40_RetCalc, 
-                        names_to = "indicator", 
-                        values_to = "value") %>% 
-    dplyr::inner_join(erdsd_var_mapping, by = "indicator") %>% 
-    dplyr::filter(!indicator_new == "remove") %>% 
-    tidyr::separate(indicator_new, 
-                    c("indicator", "sex", "age", "pop_type", "dispensation", "numdenom", "er_status", "dsd_eligibility"),
-                    sep = "\\.") %>% 
-    dplyr::mutate(across(everything(), ~ifelse(.=="", NA, as.character(.))),
-                  value = as.numeric(value),
-                  period = as.Date(month, "%Y-%m-%d"),
-                  indicator = stringr::str_replace_all(indicator, "\\.", "_"),
-                  age = stringr::str_replace_all(age, "\\_", "-"),
-                  age = dplyr::recode(age,
-                                      "unknown" = "Unknown"),
-                  sex = dplyr::recode(sex,
-                                      "M" = "Male",
-                                      "F" = "Female"),
-                  key_pop = dplyr::case_when(pop_type == "FSW" ~ "FSW",
-                                             pop_type == "MSM" ~ "MSM",
-                                             pop_type == "PWID" ~ "PWID",
-                                             pop_type == "PPCS" ~ "PPCS"),
-                  pop_type = dplyr::recode(pop_type,
-                                           "FSW" = "KP",
-                                           "MSM" = "KP",
-                                           "PWID" = "KP",
-                                           "PPCS" = "KP"),
-                  pop_type = dplyr::case_when(age %in% c("<15", "<1", "1-4", "5-9", "10-14", "15+", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "50+", "65+", "Unknown") ~ "By Age",
-                                              TRUE ~ pop_type),
-                  numdenom = tidyr::replace_na(numdenom, "N"),
-                  er_status = dplyr::recode(er_status,
-                                            "Initiated ART" = NA_character_)) %>% 
-    dplyr::filter(Partner == ip) %>% 
-    dplyr::select(partner = Partner,
-                  snu = Province,
-                  psnu = District,
-                  sitename = `Health Facility`,
-                  datim_uid = DATIM_code,
-                  period,
-                  indicator,
-                  sex,
-                  age,
-                  pop_type,
-                  key_pop,
-                  dispensation,
-                  numdenom,
-                  er_status,
-                  dsd_eligibility,
-                  value)
-  
-  tx_curr_prev <- df %>%
-    dplyr::filter(indicator == "TX_CURR") %>% 
-    dplyr::mutate(indicator = dplyr::recode(indicator,
-                              "TX_CURR" = "TX_CURR_Previous"),
-           period = period + months(1))
-  
-  df <- bind_rows(df, tx_curr_prev)
-  
-  return(df)
-  
-}
 
 
 # FUNCTIONS RUN -------------------------------------------------
 
 
-dod <- imer_reshape(DOD, "JHPIEGO-DoD")
-echo <- imer_reshape(ECHO, "ECHO")
-ariel <- imer_reshape(ARIEL, "ARIEL")
-ccs <- imer_reshape(CCS, "CCS")
-egpaf <- imer_reshape(EGPAF, "EGPAF")
-fgh <- imer_reshape(FGH, "FGH")
-icap <- imer_reshape(ICAP, "ICAP")
+dod <- reshape_em_imer(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_imer(ECHO, "ECHO")
+ariel <- reshape_em_imer(ARIEL, "ARIEL")
+ccs <- reshape_em_imer(CCS, "CCS")
+egpaf <- reshape_em_imer(EGPAF, "EGPAF")
+fgh <- reshape_em_imer(FGH, "FGH")
+icap <- reshape_em_imer(ICAP, "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
@@ -184,6 +112,49 @@ imer_tidy_historic <- historic_files %>%
 # imer_tidy_historic_2 <- imer_tidy_historic %>% 
 #   mutate
 
+clean_em_imer <- function(df){
+  
+  imer_tidy_historic_2 <- imer_tidy_historic %>% 
+    dplyr::filter(period <= as.Date(month)) %>% 
+    dplyr::select(-c(partner,
+              snu,
+              psnu,
+              sitename)) %>%
+    dplyr::left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
+    dplyr::select(datim_uid,
+           sisma_uid,
+           site_nid,
+           period,
+           partner = partner_pepfar_clinical,
+           snu,
+           psnu,
+           sitename,
+           grm_sernap,
+           cop_entry,
+           ends_with("tude"),
+           starts_with("program_"),
+           starts_with("his_"),
+           indicator,
+           numdenom,
+           pop_type,
+           key_pop,
+           dispensation,
+           er_status,
+           dsd_eligibility,
+           sex,
+           age,
+           value) %>% 
+    dplyr::mutate(temp_indicator = indicator,
+           temp_value = value) %>% 
+    tidyr::pivot_wider(
+      names_from = temp_indicator,
+      values_from = temp_value
+    )
+  
+}
+
+
+imer_tidy_historic_2 <- clean_em_imer(imer_tidy_historic)
 
 # METADATA JOIN ---------------------------------
 
@@ -236,7 +207,7 @@ imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
 # PLOTS & TABLES ---------------------------------------------------------------
 
 
-tbl <- imer_tidy_historic_3 %>%
+tbl <- imer_tidy_historic_2 %>%
   filter(period >= month_lag6) %>% 
   select(indicator, period, value) %>% 
   arrange((period)) %>% 
@@ -283,7 +254,7 @@ tbl
 
 
 readr::write_tsv(
-  imer_tidy_historic_3,
+  imer_tidy_historic_2,
   "Dataout/em_imer.txt")
 
 # write to google drive
