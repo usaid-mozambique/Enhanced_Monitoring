@@ -110,51 +110,13 @@ dsd_tidy_historic <- historic_files %>%
 # METADATA JOIN ---------------------------------
 
 
-clean_em_dsd <- function(df){
-  
-  df_cleaned <- df %>% 
-    dplyr::filter(period <= as.Date(month)) %>% 
-    dplyr::select(-c(partner,
-                     snu,
-                     psnu,
-                     sitename)) %>%
-    dplyr::left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>%
-    dplyr::select(datim_uid,
-                  sisma_uid,
-                  site_nid,
-                  period,
-                  partner = partner_pepfar_clinical,
-                  snu,
-                  psnu,
-                  sitename,
-                  ends_with("tude"),
-                  starts_with("program_"),
-                  starts_with("his_"),
-                  indicator,
-                  pop_type,
-                  dsd_eligibility,
-                  age,
-                  value) %>% 
-    dplyr::mutate(temp_indicator = indicator,
-                  temp_value = value) %>% 
-    tidyr::pivot_wider(
-      names_from = temp_indicator,
-      values_from = temp_value)
-  
-  return(df_cleaned)
-  
-}
-
-
 dsd_tidy_historic_2 <- clean_em_dsd(dsd_tidy_historic)
-
-
 
   
 # GT TABLES ---------------------------------------------------------------
 
 
-tbl <- dsd_tidy_historic_3 %>%
+tbl <- dsd_tidy_historic_2 %>%
   select(indicator, period, value) %>% 
   filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
@@ -200,7 +162,7 @@ tbl
 
 
 readr::write_tsv(
-  dsd_tidy_historic_3,
+  dsd_tidy_historic_2,
   "Dataout/em_dsd.txt")
 
 # write to google drive

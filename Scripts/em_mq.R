@@ -74,7 +74,6 @@ egpaf <- reshape_em_mq(EGPAF, "EGPAF")
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 
-cv_tidy <- bind_rows(echo, fgh, ariel, icap, ccs, egpaf)
 cv_tidy <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
 
 

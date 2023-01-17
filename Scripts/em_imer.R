@@ -107,101 +107,10 @@ imer_tidy_historic <- historic_files %>%
   reduce(rbind) 
 
 
-# CALCULATE INDICATORS ----------------------------------------------------
-
-# imer_tidy_historic_2 <- imer_tidy_historic %>% 
-#   mutate
-
-clean_em_imer <- function(df){
-  
-  imer_tidy_historic_2 <- imer_tidy_historic %>% 
-    dplyr::filter(period <= as.Date(month)) %>% 
-    dplyr::select(-c(partner,
-              snu,
-              psnu,
-              sitename)) %>%
-    dplyr::left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
-    dplyr::select(datim_uid,
-           sisma_uid,
-           site_nid,
-           period,
-           partner = partner_pepfar_clinical,
-           snu,
-           psnu,
-           sitename,
-           grm_sernap,
-           cop_entry,
-           ends_with("tude"),
-           starts_with("program_"),
-           starts_with("his_"),
-           indicator,
-           numdenom,
-           pop_type,
-           key_pop,
-           dispensation,
-           er_status,
-           dsd_eligibility,
-           sex,
-           age,
-           value) %>% 
-    dplyr::mutate(temp_indicator = indicator,
-           temp_value = value) %>% 
-    tidyr::pivot_wider(
-      names_from = temp_indicator,
-      values_from = temp_value
-    )
-  
-}
+# METADATA JOIN ---------------------------------
 
 
 imer_tidy_historic_2 <- clean_em_imer(imer_tidy_historic)
-
-# METADATA JOIN ---------------------------------
-
-imer_tidy_historic_2 <- imer_tidy_historic %>% 
-  filter(period <= as.Date(month)) %>% 
-  select(-c(partner,
-            snu,
-            psnu,
-            sitename)) %>%
-  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) 
-
-
-# OUTPUT CLEAN -----------------------
-
-
-imer_tidy_historic_3 <- imer_tidy_historic_2 %>%
-  select(datim_uid,
-         sisma_uid,
-         site_nid,
-         period,
-         partner = partner_pepfar_clinical,
-         snu,
-         psnu,
-         sitename,
-         grm_sernap,
-         cop_entry,
-         ends_with("tude"),
-         starts_with("program_"),
-         starts_with("his_"),
-         indicator,
-         numdenom,
-         pop_type,
-         key_pop,
-         dispensation,
-         er_status,
-         dsd_eligibility,
-         sex,
-         age,
-         value) %>% 
-  mutate(temp_indicator = indicator,
-         temp_value = value) %>% 
-  pivot_wider(
-    names_from = temp_indicator,
-    values_from = temp_value
-  )
-
-
 
 
 # PLOTS & TABLES ---------------------------------------------------------------
@@ -246,8 +155,6 @@ tbl <- imer_tidy_historic_2 %>%
 
 
 tbl
-
-
 
 
 # OUTPUT WRITE ----------------------------------------------
