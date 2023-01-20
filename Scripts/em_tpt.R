@@ -5,7 +5,7 @@ rm(list = ls())
 
 library(tidyverse)
 library(mozR)
-library(glamr) # lucio needs
+library(glamr)
 library(googlesheets4)
 library(googledrive)
 library(fs)
@@ -29,9 +29,11 @@ path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
 dt <- base::format(as.Date(month), 
                    "%Y_%m")
 
+# auto-generated file name used to write monthly dataset to disk
 file <- glue::glue("TPT_{dt}")
 
-month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+# value for filtering gt table
+month_lag6 <- as.Date(month) - months(5)
 
 # update each month
 DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_DOD.xlsx")
@@ -52,6 +54,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 
 # LOAD METADATA -----------------------------------------------------------
 
+
 ajuda_site_map <- pull_sitemap()
 
 
@@ -70,38 +73,14 @@ icap <- reshape_em_tpt(ICAP, "ICAP")
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 
-tpt <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
+tpt_monthly <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 
 # detect lines not coded with datim_uids
-tpt %>% 
-  distinct(DATIM_code, Province, District, `Health Facility`) %>% 
-  anti_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid"))
-
-
-# CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES ---------------------
-
-
-tpt_tidy <- tpt %>%
-  mutate(TPT_candidates = TX_CURR - (TX_CURR_TPT_Com + TX_CURR_W_TPT_last7Mo) - (TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen),
-         TPT_ineligible = TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen,
-         TPT_active_complete = TX_CURR_W_TPT_last7Mo + TX_CURR_TPT_Com) %>%
-  pivot_longer(TX_CURR:TPT_active_complete, names_to = "attribute", values_to = "value") %>%
-  mutate(indicator = attribute) %>%
-  mutate(indicator = recode(indicator,
-                            "TX_CURR_W_TPT_last7Mo" = "Actively on TPT", # use to create new indicator
-                            "TX_CURR_TB_tto" = "Recent Active TB TX",
-                            "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
-                            "TX_CURR_TPT_Com" = "TPT Completed",  # use to create new indicator
-                            "TPT_candidates" = "TPT Candidates",
-                            "TPT_ineligible" = "TPT Ineligible",
-                            "TX_CURR_TPT_Not_Comp" = "TPT Not Comp",
-                            "TPT_active_complete" = "TPT Completed/Active"),
-         Period = {month}
-  ) %>%
-  filter(!indicator %in% c("TX_CURR_Eleg_TPT_Init", "TX_CURR_Eleg_TPT_Comp")) %>%
-  select(-c(No))
+tpt_monthly %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
 
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
@@ -109,7 +88,7 @@ tpt_tidy <- tpt %>%
 
 # write to local
 readr::write_tsv(
-  tpt_tidy,
+  tpt_monthly,
   na = "",
   {path_monthly_output_file})
 
@@ -122,9 +101,9 @@ drive_put(path_monthly_output_file,
 # HISTORIC DATASET BUILD ---------------------------------
 
 
-historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
-tpt_tidy_history <- historic_files %>%
+tpt_historic <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) 
 
@@ -132,16 +111,16 @@ tpt_tidy_history <- historic_files %>%
 # JOIN METADATA & CLEAN DATAFRAME -----------------------
 
 
-tpt_tidy_history_2 <- clean_em_tpt(tpt_tidy_history)
+tpt_historic_meta <- clean_em_tpt(tpt_historic)
 
-tpt_tidy_history_2 %>% 
+tpt_historic_meta %>% 
   distinct(partner)
 
 
 # GT TABLES ---------------------------------------------------------------
 
 
-tbl <- tpt_tidy_history_2 %>%
+tbl <- tpt_historic_meta %>%
   select(indicator, period, value) %>% 
   filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
@@ -186,12 +165,13 @@ tbl
 
 # WRITE FINAL OUTPUTS ----------------------------------------------
 
+
 # write to local
 readr::write_tsv(
-  tpt_tidy_history_2,
+  tpt_historic_meta,
   "Dataout/em_tpt.txt")
 
-# write to google drive
+# write to Google Drive
 drive_put(path_historic_output_file,
           path = path_historic_output_gdrive)
 
@@ -199,7 +179,7 @@ drive_put(path_historic_output_file,
 # OUTPUT DATASET FOR SIMS PRIOTIZATION ------------------------------------
 
 
-sims_indicator <- tpt_tidy_history_2 %>% 
+sims_indicator <- tpt_historic_meta %>% 
   filter(indicator %in% c("TPT Completed/Active", "TX_CURR"),
          period == max(period)) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
