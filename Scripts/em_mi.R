@@ -27,9 +27,10 @@ path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
 dt <- base::format(as.Date(month), 
                    "%Y_%m")
 
-file <- glue::glue("MQ_{dt}")
+file <- glue::glue("MI_{dt}")
 
-month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+# value for filtering gt table
+month_lag6 <- as.Date(month) - months(5)
 
 
 # update each month
@@ -43,17 +44,20 @@ FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates D
 
 
 # do not update each month
-path_monthly_output_repo <- "Dataout/MQ_CV/monthly_processed/" # folder path where monthly dataset archived
+path_monthly_output_repo <- "Dataout/MI/monthly_processed/" # folder path where monthly dataset archived
 path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1RC5VFhD7XkuptW7o3zd21ujY6CefcTyv") # google drive folder where monthly dataset saved 
-path_historic_output_file <- "Dataout/em_mqcv.txt" # folder path where monthly dataset archived
+path_historic_output_file <- "Dataout/em_mi.txt" # folder path where monthly dataset archived
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
+
 # LOAD DATASETS -----------------------------------------------------------
+
 
 ajuda_site_map <- pull_sitemap() %>% 
   select(datim_uid,
          sisma_uid,
+         sisma_uid_datim_map,
          site_nid,
          snu,
          psnu, 
@@ -61,42 +65,43 @@ ajuda_site_map <- pull_sitemap() %>%
          partner = partner_pepfar_clinical,
          program_ap3)
 
+
 # IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
 
-dod <- reshape_em_mq(DOD, "JHPIEGO-DoD")
-echo <- reshape_em_mq(ECHO, "ECHO")
-fgh <- reshape_em_mq(FGH, "FGH")
-ariel <- reshape_em_mq(ARIEL, "ARIEL")
-icap <- reshape_em_mq(ICAP, "ICAP")
-ccs <- reshape_em_mq(CCS, "CCS")
-egpaf <- reshape_em_mq(EGPAF, "EGPAF")
+
+dod <- reshape_em_mi(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_mi(ECHO, "ECHO")
+fgh <- reshape_em_mi(FGH, "FGH")
+ariel <- reshape_em_mi(ARIEL, "ARIEL")
+icap <- reshape_em_mi(ICAP, "ICAP")
+ccs <- reshape_em_mi(CCS, "CCS")
+egpaf <- reshape_em_mi(EGPAF, "EGPAF")
+
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
 
 
-cv_tidy <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
+mi_monthly <- bind_rows(dod, echo, fgh, ariel, icap, ccs, egpaf)
+rm(dod, echo, ariel, ccs, egpaf, fgh, icap)
 
 
-cv_tidy %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
-  group_by(Partner) %>% 
-  distinct(DATIM_code) %>% 
+mi_monthly %>% # TABLE HF SUBMISSION LINES BY PARTNER.  CAUTION - BLANK SUBMISSION LINES ARE INCLUDED!
+  group_by(partner) %>% 
+  distinct(datim_uid) %>% 
   summarise(n())
 
-
 # detect lines not coded with datim_uids
-cv_tidy %>% 
-  filter(is.na(DATIM_code)) %>% 
-  distinct(DATIM_code, Province, District, `Health Facility`) %>% 
-  anti_join(ajuda_site_map, by = c("DATIM_code" = "datim_uid"))
-
-rm(echo, fgh, ariel, icap, ccs, egpaf, dod)
+mi_monthly %>% 
+  filter(is.na(datim_uid)) %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
 
 
 # WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
 
 readr::write_tsv(
-  cv_tidy,
+  mi_monthly,
   na = "",
   {path_monthly_output_file})
 
@@ -113,21 +118,21 @@ drive_put(path_monthly_output_file,
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
 
-historic_import <- historic_files %>%
-  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
+mi_historic <- historic_files %>%
+  map(~read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
-  mutate(month = as.Date(month, "%Y/%m/%d")) 
+  mutate(period = as.Date(period, "%Y/%m/%d")) 
 
 
 # JOIN METADATA ---------------------------------
 
 
-cv_tidy_historic <- clean_em_mq(historic_import)
+mi_historic_meta <- clean_em_mq(mi_historic)
+
 
 # check that all monthly data is coded to a partner
-cv_tidy_historic %>% 
+mi_historic_meta %>% 
   pivot_longer(cols = dpi.colheu.pcr_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
-  filter(period == month) %>% 
   group_by(partner) %>% 
   distinct(datim_uid) %>% 
   summarise(n())
@@ -136,10 +141,10 @@ cv_tidy_historic %>%
 # GT TABLES ---------------------------------------------------------------
 
 
-tbl <- cv_tidy_historic %>%
+tbl <- mi_historic_meta %>%
+  filter(period >= month_lag6) %>% 
   pivot_longer(cols = dpi.colheu.pcr_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
   select(indicator, period, value) %>% 
-  filter(period >= month_lag6) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
          period = as.character(period, format = "%b %y")) %>% 
@@ -182,7 +187,7 @@ tbl
 
 # write to local
 write_tsv(
-  cv_tidy_historic,
+  mi_historic_meta,
   na = "",
   path_historic_output_file)
 

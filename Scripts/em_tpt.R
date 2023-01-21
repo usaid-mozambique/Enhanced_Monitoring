@@ -117,7 +117,7 @@ tpt_historic_meta %>%
   distinct(partner)
 
 
-# GT TABLES ---------------------------------------------------------------
+# PLOTS & TABLES ---------------------------------------------------------------
 
 
 tbl <- tpt_historic_meta %>%
@@ -159,8 +159,6 @@ tbl <- tpt_historic_meta %>%
 
 
 tbl
-
-
 
 
 # WRITE FINAL OUTPUTS ----------------------------------------------

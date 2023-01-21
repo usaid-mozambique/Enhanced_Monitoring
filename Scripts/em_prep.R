@@ -71,20 +71,20 @@ icap <- reshape_em_prep(ICAP, "ICAP")
 # COMPILE DATASETS --------------------------------------------------
 
 
-prep <- bind_rows(dod, echo, ariel, ccs, egpaf, fgh, icap)
+prep_monthly <- bind_rows(dod, echo, ariel, ccs, egpaf, fgh, icap)
 rm(dod, echo, ariel, ccs, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
-prep %>% 
-  distinct(`Datim Code`, Province, District, `Health Facility`) %>% 
-  anti_join(ajuda_site_map, by = c("Datim Code" = "datim_uid"))
+prep_monthly %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
 
 
 # MONTHLY FILE WRITE ------------------------------------
 
 # write to local
 readr::write_tsv(
-  prep,
+  prep_monthly,
   na = "",
   {path_monthly_output_file})
 
@@ -99,7 +99,7 @@ drive_put(path_monthly_output_file,
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
 
-historic_import <- historic_files %>%
+prep_historic <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind)
 
@@ -107,12 +107,12 @@ historic_import <- historic_files %>%
 # METADATA JOIN ---------------------------------
 
 
-prep_tidy_historic <- clean_em_prep(historic_import)
+prep_historic_meta <- clean_em_prep(prep_historic)
 
 
 # PLOTS & TABLES ---------------------------------------------------------------
 
-tbl <- prep_tidy_historic %>%
+tbl <- prep_historic_meta %>%
   pivot_longer(cols = PrEP_Eligible:PrEP_CT_3months, names_to = "indicator", values_to = "value") %>% 
   select(indicator, period, value) %>% 
   filter(period >= month_lag6) %>% 
@@ -159,7 +159,7 @@ tbl
 
 # write to local
 readr::write_tsv(
-  prep_tidy_historic,
+  prep_historic_meta,
   "Dataout/em_prep.txt")
 
 # write to google drive

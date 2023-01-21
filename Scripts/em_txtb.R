@@ -61,6 +61,7 @@ ajuda_site_map <- pull_sitemap()
 
 # FUNCTIONS RUN -------------------------------------------------
 
+
 dod <- reshape_em_txtb(DOD, "JHPIEGO-DoD")
 echo <- reshape_em_txtb(ECHO, "ECHO")
 ariel <- reshape_em_txtb(ARIEL, "ARIEL")
@@ -69,25 +70,26 @@ egpaf <- reshape_em_txtb(EGPAF, "EGPAF")
 fgh <- reshape_em_txtb(FGH, "FGH")
 icap <- reshape_em_txtb(ICAP, "ICAP")
 
+
 # COMPILE DATASETS --------------------------------------------------
 
-txtb <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
+txtb_monthly <- bind_rows(dod, ariel, ccs, egpaf, icap, echo, fgh)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
 # detect lines not coded with datim_uids
-txtb %>% 
-  distinct(datim_uid, snu1, psnu, sitename) %>% 
-  anti_join(ajuda_site_map, by = c("datim_uid" = "datim_uid"))
+txtb_monthly %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
 
 
 # MONTHLY FILE WRITE ------------------------------------
 
 # write to local
 readr::write_tsv(
-  txtb,
+  txtb_monthly,
   {path_monthly_output_file})
 
-# write to google drive
+# write to Google Drive
 drive_put(path_monthly_output_file,
           path = path_monthly_output_gdrive,
           name = glue({file}, '.txt'))
@@ -98,37 +100,26 @@ drive_put(path_monthly_output_file,
 
 historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 
-txtb_tidy_history <- historic_files %>%
+txtb_historic <- historic_files %>%
   map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind)
 
 
 # JOIN METADATA & CLEAN DATAFRAME -----------------------
 
-txtb_tidy_history_2 <- clean_em_txtb(txtb_tidy_history)
+
+txtb_historic_meta <- clean_em_txtb(txtb_historic)
 
 # detect lines not coded with datim_uids
-txtb_tidy_history_2 %>% 
+txtb_historic_meta %>% 
   filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu, psnu, sitename)
-
-
-# OUTPUT WRITE ----------------------------------------------
-
-
-readr::write_tsv(
-  txtb_tidy_history_2,
-  "Dataout/em_txtb.txt")
-
-# write to google drive
-drive_put(path_historic_output_file,
-          path = path_historic_output_gdrive)
 
 
 # PLOTS & TABLES ---------------------------------------------------------------
 
 
-tbl <- txtb_tidy_history_2 %>%
+tbl <- txtb_historic_meta %>%
   pivot_longer(cols = TX_CURR:TX_TB_CURR_N, names_to = "indicator", values_to = "value") %>% 
   filter(period >= month_lag6) %>% 
   select(indicator, period, value) %>% 
@@ -168,4 +159,16 @@ tbl <- txtb_tidy_history_2 %>%
 
 
 tbl
+
+
+# OUTPUT WRITE ----------------------------------------------
+
+
+readr::write_tsv(
+  txtb_historic_meta,
+  "Dataout/em_txtb.txt")
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
 
