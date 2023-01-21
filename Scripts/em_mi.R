@@ -127,7 +127,7 @@ mi_historic <- historic_files %>%
 # JOIN METADATA ---------------------------------
 
 
-mi_historic_meta <- clean_em_mq(mi_historic)
+mi_historic_meta <- clean_em_mi(mi_historic)
 
 
 # check that all monthly data is coded to a partner
