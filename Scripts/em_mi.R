@@ -17,11 +17,12 @@ library(glue)
 library(gt)
 load_secrets() 
 
+
 # DEFINE REPORTING MONTH AND FILE PATHS -------------------------------------------
 
 # update each month
-month <- "2022-12-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
+month <- "2023-01-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_01/"
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -34,13 +35,14 @@ month_lag6 <- as.Date(month) - months(5)
 
 
 # update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_FGH.xlsx")
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_FGH.xlsx")
+
 
 
 # do not update each month
@@ -63,7 +65,8 @@ ajuda_site_map <- pull_sitemap() %>%
          psnu, 
          sitename,
          partner = partner_pepfar_clinical,
-         program_ap3)
+         program_ap3,
+         program_mi)
 
 
 # IMPORT & RESHAPE MQ SUBMISSIONS -----------------------------------------------------------
@@ -121,7 +124,8 @@ historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
 mi_historic <- historic_files %>%
   map(~read_tsv(file.path(path_monthly_output_repo, .))) %>%
   reduce(rbind) %>% 
-  mutate(period = as.Date(period, "%Y/%m/%d")) 
+  mutate(period = as.Date(period, "%Y/%m/%d"))
+  # filter(value > 0) # possibly causing issues in pbi
 
 
 # JOIN METADATA ---------------------------------
@@ -143,7 +147,7 @@ mi_historic_meta %>%
 
 tbl <- mi_historic_meta %>%
   filter(period >= month_lag6) %>% 
-  pivot_longer(cols = dpi.colheu.pcr_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
+  pivot_longer(cols = tpt.inicio_D:mds.cv.estaveis, names_to = "indicator", values_to = "value") %>% 
   select(indicator, period, value) %>% 
   arrange((period)) %>% 
   mutate(row_n = row_number(),
@@ -194,5 +198,3 @@ write_tsv(
 # write to google drive
 drive_put(path_historic_output_file,
           path = path_historic_output_gdrive)
-
-  

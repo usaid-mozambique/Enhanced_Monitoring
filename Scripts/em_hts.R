@@ -5,6 +5,7 @@ rm(list = ls())
 
 
 library(tidyverse)
+library(mozR)
 library(lubridate)
 library(glamr)
 library(janitor)
@@ -22,7 +23,7 @@ hfr_month_var <- "01/09/2022"
 
 
 ## KEY SISMA SEARCH WORD(S) "ano"
-## KEY SISMA SEARCH WORD(S) "indice", "diagno", "ligad"
+## KEY SISMA SEARCH WORD(S) "indice", "Diagno", "ligad", "diagno"
 ## KEY SISMA SEARCH WORD(S) "historial", "chave"
 ## SAVED SISMA REPORT "ats_smi_misau__new2"
 
@@ -59,21 +60,19 @@ site_removal_list <- "abg5UReivZX"
 # LOAD METADATA -----------------------------------------------------------
 
 
-ajuda_site_map <- read_sheet(path_ajuda_site_map) %>%
-  select(sisma_uid = sisma_id,
-         datim_uid =  orgunituid,
+ajuda_site_map <- pull_sitemap() %>% 
+  select(sisma_uid,
+         datim_uid,
          site_nid,
-         partner = `IP FY20`,
-         his_epts = epts,
-         his_emr = emr,
-         his_idart = idart,
-         his_disa = disa,
-         support_ovc = ovc,
-         support_ycm = ycm,
-         ovc,
-         ycm,
-         latitude = Lat,
-         longitude = Long)
+         partner = partner_pepfar_clinical,
+         his_epts,
+         his_emr,
+         his_idart,
+         his_disa,
+         program_ovc,
+         program_ycm,
+         latitude,
+         longitude)
 
 
 # LOAD DATASETS -----------------------------------------------------------
@@ -434,8 +433,9 @@ ats_smi_all_1 <- ats_smi_all %>%
          psnu = orgunitlevel3,
          sitename = orgunitlevel4) %>% 
   mutate(snu = str_to_title(snu),
-         psnu = str_to_title(psnu)) %>% 
-  select(sisma_uid, snu, psnu, sitename, period, indicator, modality, sub_group, sex, age_coarse, age_semi_fine, result_status, value)
+         psnu = str_to_title(psnu),
+         source = "MCH Register") %>% 
+  select(sisma_uid, snu, psnu, sitename, period, indicator, source, modality, sub_group, sex, age_coarse, age_semi_fine, result_status, value)
 
 
 #### CREATE CASE INDEX POSITIVE INDICATOR
@@ -458,7 +458,11 @@ ats_smi <- bind_rows(ats_smi_all_1, ats_smi_all_pos_1)
 
 ats <- bind_rows(ats_results, ats_hist, ats_ci, ats_smi)
 
-
+ats %>% 
+  filter(period > "2021-12-30",
+         indicator == "HTS_HIST_POS",
+         value > 0) %>%
+  count(snu, wt = value)
 
 # JOIN METADATA -----------------------------------------------------------
 
@@ -474,7 +478,7 @@ ats_2 <- ats %>%
          psnu,
          sitename,
          ends_with("tude"),
-         starts_with("support"),
+         starts_with("program"),
          starts_with("his"),
          indicator,
          modality,
@@ -485,7 +489,7 @@ ats_2 <- ats %>%
          result_status,
          value) %>%
   mutate(
-    across(c(support_ovc:his_disa), ~replace_na(.x, 0))
+    across(c(program_ovc:his_disa), ~replace_na(.x, 0))
   ) %>%
   mutate(row_n = row_number()) %>% 
   pivot_wider(names_from = "indicator", values_from = "value") %>% 

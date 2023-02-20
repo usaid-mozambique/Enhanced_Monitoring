@@ -1,48 +1,48 @@
-rm(list = ls())
-
-# DEPENDENCIES ------------------------------------------------------------
-
-
-library(tidyverse)
-library(mozR)
-library(glamr)
-library(googlesheets4)
-library(googledrive)
-library(fs)
-library(lubridate)
-library(janitor)
-library(readxl)
-library(openxlsx)
-library(glue)
-library(gt)
-load_secrets() 
-
-
-# DEFINE VALUES AND PATHS ---------------------------
+  rm(list = ls())
+  
+  # DEPENDENCIES ------------------------------------------------------------
+  
+  
+  library(tidyverse)
+  library(mozR)
+  library(glamr)
+  library(googlesheets4)
+  library(googledrive)
+  library(fs)
+  library(lubridate)
+  library(janitor)
+  library(readxl)
+  library(openxlsx)
+  library(glue)
+  library(gt)
+  load_secrets() 
+  
+  
+  # DEFINE VALUES AND PATHS ---------------------------
+  
+  # update each month
+  month <- "2023-01-20"
+  path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_01/"
+  
+  
+  # do not update each month
+  dt <- base::format(as.Date(month), 
+                     "%Y_%m")
+  
+  # auto-generated file name used to write monthly dataset to disk
+  file <- glue::glue("TPT_{dt}")
+  
+  # value for filtering gt table
+  month_lag6 <- as.Date(month) - months(5)
 
 # update each month
-month <- "2022-12-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
-
-
-# do not update each month
-dt <- base::format(as.Date(month), 
-                   "%Y_%m")
-
-# auto-generated file name used to write monthly dataset to disk
-file <- glue::glue("TPT_{dt}")
-
-# value for filtering gt table
-month_lag6 <- as.Date(month) - months(5)
-
-# update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_FGH.xlsx")
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_FGH.xlsx")
 
 
 # do not update each month
@@ -61,13 +61,13 @@ ajuda_site_map <- pull_sitemap()
 # IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
 
-dod <- reshape_em_tpt(DOD, "JHPIEGO-DoD")
-echo <- reshape_em_tpt(ECHO, "ECHO")
-ariel <- reshape_em_tpt(ARIEL, "ARIEL")
-ccs <- reshape_em_tpt(CCS, "CCS")
-egpaf <- reshape_em_tpt(EGPAF, "EGPAF")
-fgh <- reshape_em_tpt(FGH, "FGH")
-icap <- reshape_em_tpt(ICAP, "ICAP")
+dod <- reshape_em(type = "TPT", filename = DOD, ip = "JHPIEGO-DoD")
+echo <- reshape_em(type = "TPT", filename = ECHO, ip = "ECHO")
+ariel <- reshape_em(type = "TPT", filename = ARIEL, ip = "ARIEL")
+ccs <- reshape_em(type = "TPT", filename = CCS, ip = "CCS")
+egpaf <- reshape_em(type = "TPT", filename = EGPAF, ip = "EGPAF")
+fgh <- reshape_em(type = "TPT", filename = FGH, ip = "FGH")
+icap <- reshape_em(type = "TPT", filename = ICAP, ip = "ICAP")
 
 
 # COMPILE IP SUMBISSIONS --------------------------------------------------
@@ -111,7 +111,7 @@ tpt_historic <- historic_files %>%
 # JOIN METADATA & CLEAN DATAFRAME -----------------------
 
 
-tpt_historic_meta <- clean_em_tpt(tpt_historic)
+tpt_historic_meta <- clean_em_tpt(df = tpt_historic)
 
 tpt_historic_meta %>% 
   distinct(partner)

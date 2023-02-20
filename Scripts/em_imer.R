@@ -21,8 +21,9 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2022-12-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2022_12/"
+month <- "2023-01-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_01/"
+
 
 # do not update each month
 dt <- base::format(as.Date(month), 
@@ -33,13 +34,14 @@ file <- glue::glue("IMER_{dt}")
 month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
 
 # update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Dez 2022_FY23Q1_FGH.xlsx")
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_FGH.xlsx")
+
 
 
 # do not update each month
@@ -55,7 +57,6 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 ajuda_site_map <- pull_sitemap()
 
 erdsd_var_mapping <- read_excel("Documents/erdsd_var_mapping.xlsx", sheet = "Sheet5")
-
 
 
 # FUNCTIONS RUN -------------------------------------------------
@@ -112,6 +113,9 @@ imer_tidy_historic <- historic_files %>%
 
 imer_tidy_historic_2 <- clean_em_imer(imer_tidy_historic)
 
+# sum(imer_tidy_historic_2$TX_MMD, na.rm=T)
+# 
+# sum(imer_tidy_historic_2$TX_MMD_D, na.rm=T)
 
 # PLOTS & TABLES ---------------------------------------------------------------
 

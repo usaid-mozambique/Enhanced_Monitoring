@@ -4,7 +4,6 @@ rm(list = ls())
 # DEPENDENCIES ------------------------------------------------------------
 
 
-load_secrets()
 library(tidyverse)
 library(fs)
 library(googlesheets4)
@@ -18,14 +17,14 @@ library(glue)
 library(readxl)
 library(openxlsx)
 library(Wavelength)
-
+load_secrets()
 
 # VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2022-10-20"
-file <- "2022_10"
-file_input <- "Data/Disa_new/monthly/10_Relatorio Mensal de Carga Viral Outubro 2022.xlsx"
+period <- "2023-01-20"
+file <- "2023_01"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Janeiro 2023.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
