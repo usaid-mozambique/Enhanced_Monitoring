@@ -20,19 +20,20 @@ load_secrets()
 # DEFINE PATHS ------------------------------------------------------------
 
 
-year <- "2019"
+year <- "2023"
 
-ats_results_path <- glue::glue("Data/MISAU/ATS/ats_results_{year}.csv") # saved report "ats_resultados"     (sisma data search "ano")
-ats_hist_path    <- glue::glue("Data/MISAU/ATS/ats_hist_{year}.csv")    # saved report "ats_hist_chave"     (sisma data search "historial", "chave")
-ats_ci_path      <- glue::glue("Data/MISAU/ATS/ats_ci_lig_{year}.csv")  # saved report "ats_ci_lig"         (sisma data search "indice", "Diagno", "ligad", "diagno")
-ats_smi_path     <- glue::glue("Data/MISAU/ATS/ats_smi_{year}.csv")     # saved report "ats_smi"
-ats_ccsd_path    <- glue::glue("Data/MISAU/ATS/ats_ccs_ccd_{year}.csv") # saved report "ats_smi_ccs_ccd"
-ats_saaj_cm_path <- glue::glue("Data/MISAU/ATS/ats_saaj_cm_{year}.csv") # saved report "ats_saaj_cm"
+ats_results_path <- glue::glue("Data/MISAU/ATS/ats_results_{year}.csv") # saved report "ats_resultados"
+ats_hist_path <- glue::glue("Data/MISAU/ATS/ats_hist_{year}.csv")       # saved report  "ats_hist_chave
+ats_ci_path <- glue::glue("Data/MISAU/ATS/ats_ci_lig_{year}.csv")
+ats_smi_path <- glue::glue("Data/MISAU/ATS/ats_smi_{year}.csv")
+ats_ccsd_path <- glue::glue("Data/MISAU/ATS/ats_ccs_ccd_{year}.csv")    # saved report "ats_smi_ccs_ccd"
+ats_saaj_cm_path <- glue::glue("Data/MISAU/ATS/ats_saaj_cm_{year}.csv")    # saved report "ats_saaj_cm"
 
 file_output <- glue::glue("Dataout/HTS/ats_all_{year}.txt")
 
 
 # FUNCTIONAL -----------------------------------------------------------
+
 
 
 ats_results <- clean_sisma_csv(ats_results_path) %>%
@@ -55,7 +56,13 @@ ats_saaj_cm <- clean_sisma_csv(ats_saaj_cm_path) %>%
 
 
 ats_compile <- bind_rows(ats_results, ats_history, ats_index, ats_smi, ats_ccsd, ats_saaj_cm)
-# ats_compile <- bind_rows(ats_results, ats_history, ats_index, ats_smi) # use for 2019 as no saaj or ccsd data
+
+
+# IN-DEV ------------------------------------------------------------------
+
+
+
+
 
 
 # WRITE ------------------------------------------------------------------
@@ -64,3 +71,21 @@ readr::write_tsv(
   ats_compile,
   file_output,
   na = "")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
