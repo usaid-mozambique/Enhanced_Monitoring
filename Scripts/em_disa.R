@@ -269,6 +269,7 @@ disa_meta %>%
 
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
+  select(!c(snu, psnu, sitename)) %>% 
   left_join(datim_orgsuids, by = c("datim_uid" = "datim_uid")) %>%
   left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
   mutate(
