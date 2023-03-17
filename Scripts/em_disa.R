@@ -22,9 +22,9 @@ load_secrets()
 # VALUES & PATHS ----------------------------------------------------------
 
 # paths that require updating with each new monthly file
-period <- "2023-01-20"
-file <- "2023_01"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Janeiro 2023.xlsx"
+period <- "2023-02-20"
+file <- "2023_02"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Fevereiro 2023.xlsx"
 
 # paths that do not require monthly updating
 path_historic_output_local <- "Dataout/DISA/monthly_processed/"
@@ -78,6 +78,7 @@ xAge <- readxl::read_excel({file_input},
   dplyr::mutate(group = "Age") %>%
   glimpse()
 
+
 # disa pregnant women
 xPW <- readxl::read_excel({file_input}, 
                           sheet = "S. Viral (M. Gravidas)",
@@ -90,6 +91,7 @@ xPW <- readxl::read_excel({file_input},
                           skip = 2) %>% 
   dplyr::mutate(group = "PW") %>% 
   glimpse
+
 
 # disa lactating women
 xLW <- readxl::read_excel({file_input}, 
@@ -267,10 +269,6 @@ disa_meta %>%
 
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
-  group_by(period, sisma_uid, datim_uid, site_nid, age, group, sex, motive, tat_step) %>% 
-  summarise(VL = sum(VL),
-            VLS = sum(VLS),
-            TAT = sum(TAT)) %>%
   left_join(datim_orgsuids, by = c("datim_uid" = "datim_uid")) %>%
   left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
   mutate(

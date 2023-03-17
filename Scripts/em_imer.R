@@ -21,8 +21,8 @@ load_secrets()
 # VALUES & PATHS ---------------------------
 
 # update each month
-month <- "2023-01-20"
-path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_01/"
+month <- "2023-02-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_02/"
 
 
 # do not update each month
@@ -34,14 +34,13 @@ file <- glue::glue("IMER_{dt}")
 month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
 
 # update each month
-DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_DOD.xlsx")
-ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ARIEL.xlsx")
-CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_CCS.xlsx")
-ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ECHO.xlsx")
-EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_EGPAF.xlsx")
-ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_ICAP.xlsx")
-FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates_Jan23_FGH.xlsx")
-
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_FGH.xlsx")
 
 
 # do not update each month
@@ -113,9 +112,6 @@ imer_tidy_historic <- historic_files %>%
 
 imer_tidy_historic_2 <- clean_em_imer(imer_tidy_historic)
 
-# sum(imer_tidy_historic_2$TX_MMD, na.rm=T)
-# 
-# sum(imer_tidy_historic_2$TX_MMD_D, na.rm=T)
 
 # PLOTS & TABLES ---------------------------------------------------------------
 

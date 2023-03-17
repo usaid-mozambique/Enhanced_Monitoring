@@ -22,6 +22,7 @@ load_secrets()
 path_ats_results <- "Data/MISAU/ATS/ats_results_2022.csv"
 
 df <- clean_sisma_csv(file = path_ats_results)
+
 df_parsed <- parse_sisma_ats_results(df)
 
 
