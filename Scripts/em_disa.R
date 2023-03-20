@@ -164,6 +164,8 @@ df_vl <- df_vl %>%
                 period = {period})
 
 
+unique(df_vl$age)
+
 # CLEAN TAT DATAFRAME -----------------------------------------------------
 
 
