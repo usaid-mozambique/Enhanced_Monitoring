@@ -17,35 +17,145 @@ library(glue)
 library(readxl)
 library(openxlsx)
 library(Wavelength)
+library(mozR)
 load_secrets()
 
 # VALUES & PATHS ----------------------------------------------------------
 
-# paths that require updating with each new monthly file
-period <- "2023-02-20"
-file <- "2023_02"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Fevereiro 2023.xlsx"
+# # paths that require updating with each new monthly file
+# period <- "2022-12-20"
+# file <- "2023_12"
+# 
+# 
+# file_input <- "C:/Users/jlara/Desktop/Relatorio Mensal de Carga Viral proposed template.xlsx"
+# 
+# # paths that do not require monthly updating
+# path_historic_output_local <- "Dataout/DISA/monthly_processed/"
+# file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
+# file_historic_output_local <- "Dataout/em_disa.txt"
+# 
+# path_disa_datim_map <- as_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
+# path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
+# path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
+# 
+# 
+# 
+# df_sitemap_disa <- pull_sitemap(sheetname = "map_disa") %>% select(!note)
+# df_sitemap_ajuda <- pull_sitemap(sheetname = "list_ajuda") %>% select(datim_uid, partner = partner_pepfar_clinical, starts_with("his_"))
 
-# paths that do not require monthly updating
-path_historic_output_local <- "Dataout/DISA/monthly_processed/"
-file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
-file_historic_output_local <- "Dataout/em_disa.txt"
 
-path_disa_datim_map <- as_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
-path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
-path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
+month <- "2022-12-20"
+filename <- "C:/Users/jlara/Desktop/Relatorio Mensal de Carga Viral proposed template.xlsx"
+
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("DISA_VL_{dt}")
+
+
 
 
 # DATA LOAD, MUNGE & COMPILE -------------------------------------------------------
 
+# ingestion
+df_age <- readxl::read_excel(filename, 
+                             sheet = "Age & Sex", 
+                             col_types = c("text", 
+                                           "text", "text", "text", "text", "text", 
+                                           "text", "text", "text", "numeric", 
+                                           "numeric", "numeric", "numeric", 
+                                           "numeric", "numeric", "numeric", 
+                                           "numeric", "numeric", "numeric", 
+                                           "numeric"), 
+                             skip = 4)
 
-disa_datim_map <- read_sheet(path_disa_datim_map, sheet = "map_disa") %>% 
-  select(!c(note))
 
-ajuda_site_map <- read_sheet(path_disa_datim_map, sheet = "list_ajuda") %>% 
-  select(datim_uid,
-         partner = partner_pepfar_clinical,
-         starts_with("his_"))
+df_pw <- readxl::read_excel(filename, 
+                            sheet = "S. Viral (M. Gravidas)", 
+                            col_types = c("text", 
+                                          "text", "text", "text", "text", "text", 
+                                          "text", "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric"), 
+                            skip = 4)
+
+
+df_lw <- readxl::read_excel(filename, 
+                            sheet = "S. Viral (M. Lactantes)", 
+                            col_types = c("text", 
+                                          "text", "text", "text", "text", "text", 
+                                          "text", "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric"), 
+                            skip = 4)
+
+
+df_tat <- readxl::read_excel(filename, 
+                             sheet = "TRL - AVG", 
+                             col_types = c("text", 
+                                           "text", "text", "text", "text", "text", 
+                                           "text", "numeric", "numeric", "numeric", 
+                                           "numeric", "numeric"), 
+                             skip = 4)
+
+
+
+
+# tidy
+df <- dplyr::bind_rows(df_age, df_pw, df_lw, df_tat) %>% 
+  dplyr::select(!c(datim_uid, sitetype, contains("total"))) %>%
+  tidyr::pivot_longer(cols = tidyselect::starts_with("vl"),
+                      names_to = c("indicator", "group", "motive", "result", "tat_step"),
+                      names_sep = "_",
+                      values_to = "value") %>% 
+  dplyr::filter(value > 0)
+
+
+
+
+# feature engineering
+df_1 <- df %>% 
+  dplyr::mutate(period = as.Date(month, "%Y-%m-%d"),
+                
+                sex = dplyr::case_when(indicator == "vl" & sex == "F" ~ "Female",
+                                       indicator == "vl" & sex == "M" ~ "Male",
+                                       indicator == "vl" & sex == "UNKNOWN" ~ "Unknown",
+                                       stringr::str_detect(sex, "specif") ~ "Unknown"),
+                
+                age = dplyr::case_when(age == "<1" ~ "<01",
+                                       age == "NS" ~ "Unknown Age",
+                                       stringr::str_detect(age, "specif") ~ "Unknown Age",
+                                       TRUE ~ age),
+                
+                group = dplyr::case_when(group == "age" ~ "Age",
+                                         group == "pw" ~ "PW",
+                                         group == "lw" ~ "LW"),
+                
+                motive = dplyr::case_when(motive == "routine" ~ "Routine",
+                                          motive == "failure" ~ "Theraputic Failure",
+                                          motive == "repeat" ~ "Post Breastfeeding",
+                                          motive == "unspecified" ~ "Not Specified",
+                                          motive == "" ~ NA_character_),
+                
+                tat_step = dplyr::case_when(str_detect(tat_step, "s1.") ~ "S1: Collection to Receipt",
+                                            str_detect(tat_step, "s2.") ~ "S2: Receipt to Registration",
+                                            str_detect(tat_step, "s3.") ~ "S3: Registration to Analysis",
+                                            str_detect(tat_step, "s4.") ~ "S4: Analysis to Validation"),
+                
+                VL = dplyr::case_when(result == "suppress" | result == "unsuppress" & indicator == "vl" ~ value),
+                
+                VLS = dplyr::case_when(result == "suppress" & indicator == "vl" ~ value,
+                                       is.na(result) ~ 0),
+                
+                TAT = dplyr::case_when(indicator == "vltat" ~ value)) %>% 
+  
+  dplyr::select(!c(result, indicator, value))
+
+ df_1 %>% distinct(age) %>% print(n=100)
+ df_1 %>% distinct(sex) %>% print(n=100)
+
 
 
 ou_name <- name <- "Mozambique"
@@ -228,18 +338,6 @@ disa %>%
 
 # PRINT MONTHLY OUTPUT ----------------------------------------------------
 
-
-readr::write_tsv(
-  disa,
-  {file_monthly_output_local},
-  na ="")
-
-drive_put(file_monthly_output_local,
-          path = path_monthly_output_gdrive,
-          name = glue({file}, '.txt')
-)
-
-
 # SURVEY MONTHLY DATASETS AND COMPILE ----------------------------
 
 
@@ -350,17 +448,3 @@ df_vl_plot %>%
 
 # PRINT HISTORIC OUTPUTS ------------------------------------------------------
 
-
-write.xlsx(disa_missing,
-           {"Dataout/DISA/missing_sites_mfl.xlsx"},
-           overwrite = TRUE)
-
-
-readr::write_tsv(
-  disa_final,
-  {file_historic_output_local},
-  na = "")
-
-
-drive_put(file_historic_output_local,
-          path = path_historic_output_gdrive)
