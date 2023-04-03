@@ -34,6 +34,16 @@ dt <- base::format(as.Date(month_input),
 file <- glue::glue("DISA_VL_{dt}")
 
 
+# paths that do not require monthly updating
+path_historic_output_local <- "Dataout/DISA/monthly_processed/"
+file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
+file_historic_output_local <- "Dataout/em_disa.txt"
+
+path_disa_datim_map <- as_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
+
+
 
 # DATA LOAD, MUNGE & COMPILE -------------------------------------------------------
 
