@@ -39,22 +39,25 @@ path_historic_output_local <- "Dataout/DISA/monthly_processed/"
 file_monthly_output_local <- path(path_historic_output_local, file, ext = "txt")
 file_historic_output_local <- "Dataout/em_disa.txt"
 
-path_disa_datim_map <- as_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
 path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/12XN6RKaHNlmPoy3om0cbNd1Rn4SqHSva")
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
 
 
 
-# DATA LOAD, MUNGE & COMPILE -------------------------------------------------------
+# DATA LOAD -------------------------------------------------------
 
 
 df <- reshape_disa_vl(filepath = file_input, month = month_input)
 
 
-# ou_name <- name <- "Mozambique"
-# ou_uid <- get_ouuid(operatingunit = ou_name)
-# org_level <- get_ouorglevel(operatingunit = ou_name, org_type =  c("facility"))
-# orgsuids <- get_ouorgs(ouuid = ou_uid, level =  org_level)
+disa_datim_map <- pull_sitemap(sheet = "map_disa") %>% 
+  select(!c(note))
+
+
+ajuda_site_map <- pull_sitemap() %>% 
+  select(datim_uid,
+         partner = partner_pepfar_clinical,
+         starts_with("his_"))
 
 
 cntry <- "Mozambique"
@@ -68,8 +71,8 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
   arrange(snu, psnu, sitename)
 
 
-disa_datim_map <- read_sheet(path_disa_datim_map, sheet = "map_disa") %>% 
-  select(!c(note))
+
+# SUBMISSION CHECKS -------------------------------------------------------
 
 
 # tabulate unique sites that have viral load results reported
@@ -114,7 +117,7 @@ disa_temp <- historic_files %>%
   reduce(rbind)
 
 
-# JOIN DISA MAPPING -------------------------------------------------------
+# JOIN DISA MAPPING & CHECK -------------------------------------------------------
 
 
 disa_meta <- disa_temp %>% 
@@ -133,30 +136,29 @@ disa_meta %>%
 
 # REMOVE ROWS WITHOUT DATIM UID & CLEAN -----------------------------------
 
+
 disa_final <- disa_meta %>% 
   drop_na(datim_uid) %>%
   select(!c(snu, psnu, sitename)) %>% 
+  
   left_join(datim_orgsuids, by = c("datim_uid" = "datim_uid")) %>%
   left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
+  
   mutate(
     partner = replace_na(partner, "MISAU"),
     support_type = case_when(
       partner == "MISAU" ~ "Sustainability",
       TRUE ~ as.character("AJUDA")),
+    
     agency = case_when(
       partner == "MISAU" ~ "MISAU",
       partner == "JHPIEGO-DoD" ~ "DOD",
       partner == "ECHO" ~ "USAID",
       TRUE ~ as.character("HHS/CDC")),
-    snu = case_when(
-      partner == "JHPIEGO-DoD" ~ "_Military",
-      TRUE ~ snu),
-    psnu = case_when(
-      partner == "JHPIEGO-DoD" ~ "_Military",
-      TRUE ~ psnu),
-    sitename = case_when(
-      partner == "JHPIEGO-DoD" ~ "_Military",
-      TRUE ~ sitename)) %>% 
+    
+    across(c(snu, psnu, sitename), ~ case_when(partner == "JHPIEGO-DoD" ~ "_Military",
+                                                    TRUE ~ .))) %>% 
+  
   select(period,
          sisma_uid,
          datim_uid,
@@ -175,11 +177,17 @@ disa_final <- disa_meta %>%
          tat_step,
          VL,
          VLS,
-         TAT) %>% 
-  glimpse()
+         TAT)
+  
+
+# CHECK UNIQUE AGE/SEX & ASSESS MISSING DATA --------------------------
 
 
-# CHECK RESULTS LOST WHEN FILTERING ON DATIM_UID --------------------------
+disa_final %>% 
+  distinct(age)
+
+disa_final %>% 
+  distinct(sex)
 
 
 disa_missing <- disa_meta %>% 
@@ -189,11 +197,14 @@ disa_missing <- disa_meta %>%
   summarize(
     across(c(VL, VLS, TAT), .fns = sum), .groups = "drop")
 
-sum(disa_final$VL, na.rm = T)
-sum(disa_missing$VL, na.rm = T)
+check_total_vl <- sum(disa_final$VL, na.rm = T)
+check_total_missing <- sum(disa_missing$VL, na.rm = T)
+
+1 - check_total_missing / check_total_vl
 
 
 # PLOT HISTORIC DATA ----------------------------------------------
+
 
 df_vl_plot <- disa_final %>% 
   filter(!is.na(group)) %>% 
@@ -209,8 +220,22 @@ df_vl_plot %>%
        color = "Partner") + 
   theme_solarized() + 
   theme(axis.title = element_text()) + 
-  facet_wrap(~group)
+  facet_wrap(~group)  
 
 
 # PRINT HISTORIC OUTPUTS ------------------------------------------------------
 
+
+write.xlsx(disa_missing,
+           {"Dataout/DISA/missing_sites_mfl.xlsx"},
+           overwrite = TRUE)
+
+
+readr::write_tsv(
+  disa_final,
+  {file_historic_output_local},
+  na = "")
+
+
+drive_put(file_historic_output_local,
+          path = path_historic_output_gdrive)
