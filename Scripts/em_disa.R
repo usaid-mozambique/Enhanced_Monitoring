@@ -87,6 +87,19 @@ df %>%
 
 # PRINT MONTHLY OUTPUT ----------------------------------------------------
 
+
+readr::write_tsv(
+  df,
+  {file_monthly_output_local},
+  na ="")
+
+
+drive_put(file_monthly_output_local,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt')
+)
+
+
 # SURVEY MONTHLY DATASETS AND COMPILE ----------------------------
 
 
