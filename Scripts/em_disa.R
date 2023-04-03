@@ -68,6 +68,10 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
   arrange(snu, psnu, sitename)
 
 
+disa_datim_map <- read_sheet(path_disa_datim_map, sheet = "map_disa") %>% 
+  select(!c(note))
+
+
 # tabulate unique sites that have viral load results reported
 df %>% 
   filter(!is.na(disa_uid)) %>% 
