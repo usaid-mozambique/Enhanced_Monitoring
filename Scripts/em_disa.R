@@ -66,7 +66,7 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
   filter(!is.na(facility) & !is.na(psnu)) %>% 
   select(datim_uid = orgunituid,
          snu = snu1,
-         psnu,
+         psnu = community, # changed to community with update to datim
          sitename = facility) %>% 
   arrange(snu, psnu, sitename)
 
@@ -137,48 +137,8 @@ disa_meta %>%
 # REMOVE ROWS WITHOUT DATIM UID & CLEAN -----------------------------------
 
 
-disa_final <- disa_meta %>% 
-  drop_na(datim_uid) %>%
-  select(!c(snu, psnu, sitename)) %>% 
-  
-  left_join(datim_orgsuids, by = c("datim_uid" = "datim_uid")) %>%
-  left_join(ajuda_site_map, by = c("datim_uid" = "datim_uid")) %>% 
-  
-  mutate(
-    partner = replace_na(partner, "MISAU"),
-    support_type = case_when(
-      partner == "MISAU" ~ "Sustainability",
-      TRUE ~ as.character("AJUDA")),
-    
-    agency = case_when(
-      partner == "MISAU" ~ "MISAU",
-      partner == "JHPIEGO-DoD" ~ "DOD",
-      partner == "ECHO" ~ "USAID",
-      TRUE ~ as.character("HHS/CDC")),
-    
-    across(c(snu, psnu, sitename), ~ case_when(partner == "JHPIEGO-DoD" ~ "_Military",
-                                                    TRUE ~ .))) %>% 
-  
-  select(period,
-         sisma_uid,
-         datim_uid,
-         site_nid,
-         starts_with("his_"),
-         snu,
-         psnu,
-         sitename,
-         support_type,
-         partner,
-         agency,
-         age,
-         group,
-         sex,
-         motive,
-         tat_step,
-         VL,
-         VLS,
-         TAT)
-  
+disa_final <- clean_disa_vl(disa_meta)
+
 
 # CHECK UNIQUE AGE/SEX & ASSESS MISSING DATA --------------------------
 
