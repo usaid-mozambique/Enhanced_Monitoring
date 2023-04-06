@@ -59,6 +59,10 @@ ajuda_site_map <- pull_sitemap() %>%
          partner = partner_pepfar_clinical,
          starts_with("his_"))
 
+psnuuid_map <- pull_sitemap(sheetname = "list_psnu") %>% 
+  select(psnu,
+         psnuuid)
+
 
 cntry <- "Mozambique"
 uid <- get_ouuid(cntry)
@@ -138,7 +142,6 @@ disa_meta %>%
 
 
 disa_final <- clean_disa_vl(disa_meta)
-
 
 # CHECK UNIQUE AGE/SEX & ASSESS MISSING DATA --------------------------
 
