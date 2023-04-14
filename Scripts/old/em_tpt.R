@@ -1,321 +1,198 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
+  rm(list = ls())
+  
+  # DEPENDENCIES ------------------------------------------------------------
+  
+  
+  library(tidyverse)
+  library(mozR)
+  library(glamr)
+  library(googlesheets4)
+  library(googledrive)
+  library(fs)
+  library(lubridate)
+  library(janitor)
+  library(readxl)
+  library(openxlsx)
+  library(glue)
+  library(gt)
+  load_secrets() 
+  
+  
+  # DEFINE VALUES AND PATHS ---------------------------
+  
+  # update each month
+  month <- "2023-02-20"
+  path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_02/"
+  
+  
+  # do not update each month
+  dt <- base::format(as.Date(month), 
+                     "%Y_%m")
+  
+  # auto-generated file name used to write monthly dataset to disk
+  file <- glue::glue("TPT_{dt}")
+  
+  # value for filtering gt table
+  month_lag6 <- as.Date(month) - months(5)
 
-library(tidyverse)
-library(glamr)
-library(janitor)
-library(readxl)
-library(openxlsx)
-library(glue)
+# update each month
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_FGH.xlsx")
 
-rm(list = ls())
 
-#---- DEFINE MONTH AND LOAD DATASETS - NEEDS UPDATING EVERY MONTH! --------------------------
+# do not update each month
+path_monthly_output_repo <- "Dataout/TPT/monthly_processed/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_tpt.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
 
-month <- "2021-09-20" # UPDATE
-monthly_dataset <- ("Data/Ajuda/ER_DSD_TPT/_CompileHistoric/TPT_2021_09.csv") # PATH AND NAME OF MONTHLY DATASET BEING PROCESSED AND SAVED TO DISK
+# LOAD METADATA -----------------------------------------------------------
 
-DOD <- "Data/Ajuda/ER_DSD_TPT/2021_09/DOD_Sept_2021final 07102021DOD Jhpiego.xlsx"
-ARIEL <- "Data/Ajuda/ER_DSD_TPT/2021_09/ARIEL_Sep_2021 (Retention Template).xlsx"
-CCS <- "Data/Ajuda/ER_DSD_TPT/2021_09/CCS_Sep_2021 (Retention Template).xlsx"
-ECHO <- "Data/Ajuda/ER_DSD_TPT/2021_09/ECHO_PartnerName_Sept_2021 (Retention Template).xlsx"
-EGPAF <- "Data/Ajuda/ER_DSD_TPT/2021_09/EGPAF_Sept_2021 (Retention Template)_11 10 2021.xlsx"
-ICAP <- "Data/Ajuda/ER_DSD_TPT/2021_09/ICAP_Setembro_2021 (Retention Template)_10102021.xlsx"
-FGH <- "Data/Ajuda/ER_DSD_TPT/2021_09/FGH_Sep_2021 (Retention Template).xlsx"
 
-#---- DEFINE PATHS AND OUTPUT NAMES - DOES NOT NEED UPDATING --------------------------------
+ajuda_site_map <- pull_sitemap()
 
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_fy21q4.xlsx") %>%
-  select(-c(sisma_id,
-            `IP FY20`,
-            ajuda,
-            ajuda_phase,
-            epts_date,
-            idart_date)) %>%
-  dplyr::mutate(conflict = replace_na(conflict, 0),
-                corridor = replace_na(corridor, 0))
 
-historic_files_path <- "Data/Ajuda/ER_DSD_TPT/_CompileHistoric/"  # PATH USED TO CREATE A LIST AND COMPILE ALL .CSV FILES PREVIOUSLY CREATED
+# IMPORT & RESHAPE TPT SUBMISSIONS -------------------------------------------------
 
-historic_dataset <- ("Dataout/em_tpt.txt")  # PATH AND NAME OF COMPILED INTER-AGENCY DATASET THAT IS SHARED WITH CDC EVERY MONTH
 
-#---- IMPORT AND MERGE DOD DATA -------------------------------------------------------
-# 
+dod <- reshape_em(type = "TPT", filename = DOD, ip = "JHPIEGO-DoD")
+echo <- reshape_em(type = "TPT", filename = ECHO, ip = "ECHO")
+ariel <- reshape_em(type = "TPT", filename = ARIEL, ip = "ARIEL")
+ccs <- reshape_em(type = "TPT", filename = CCS, ip = "CCS")
+egpaf <- reshape_em(type = "TPT", filename = EGPAF, ip = "EGPAF")
+fgh <- reshape_em(type = "TPT", filename = FGH, ip = "FGH")
+icap <- reshape_em(type = "TPT", filename = ICAP, ip = "ICAP")
 
-dod <- read_excel({DOD}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
 
-#---- IMPORT AND MERGE ECHO DATA -------------------------------------------------------
+# COMPILE IP SUMBISSIONS --------------------------------------------------
 
-echo <- read_excel({ECHO}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
- 
-#---- IMPORT AND MERGE ARIEL DATA -------------------------------------------------------
 
-ariel <- read_excel({ARIEL}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
- 
-#---- IMPORT AND MERGE CCS DATA -------------------------------------------------------
-
-ccs <- read_excel({CCS}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
-
-#---- IMPORT AND MERGE EGPAF DATA -------------------------------------------------------
-
-egpaf <- read_excel({EGPAF}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
-
-#---- IMPORT AND MERGE FGH DATA -------------------------------------------------------
-
-fgh <- read_excel({FGH}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
-
-#---- IMPORT AND MERGE ICAP DATA -------------------------------------------------------
-
-icap <- read_excel({ICAP}, sheet = "TB", skip = 7) %>%
-  dplyr::select(c(No,
-                  Partner,
-                  Province,
-                  District,
-                  `Health Facility`,
-                  DATIM_code,
-                  SISMA_code,
-                  Type,
-                  Period,
-                  TX_CURR,
-                  TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init)) %>%
-  filter(across(c(TX_CURR_TPT_Com,
-                  TX_CURR_TPT_Not_Comp,
-                  TX_CURR_TB_tto,
-                  TX_CURR_TPT_Not_Comp_POS_Screen,
-                  TX_CURR_Eleg_TPT_Comp,
-                  TX_CURR_W_TPT_last7Mo,
-                  TX_CURR_Eleg_TPT_Init), ~ !is.na(.x)))
-
-#---- COMPILE IP SUMBISSIONS --------------------------------------------
-
-tpt <- dplyr::bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
-
+tpt_monthly <- bind_rows(dod, ariel, ccs, echo, egpaf, fgh, icap)
 rm(dod, ariel, ccs, echo, egpaf, fgh, icap)
 
-#---- CALCULATE NEW VARIABLES, PIVOT AND RENAME VARIABLES -----------------------
 
-tpt_tidy <- tpt %>%
-  dplyr::mutate(TPT_candidates = TX_CURR - (TX_CURR_TPT_Com + TX_CURR_W_TPT_last7Mo) - (TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen),
-                TPT_ineligible = TX_CURR_TB_tto + TX_CURR_TPT_Not_Comp_POS_Screen) %>%
-  tidyr::pivot_longer(TX_CURR:TPT_ineligible, names_to = "attribute", values_to = "value") %>%
-  dplyr::mutate(indicator = attribute) %>%
-  dplyr::mutate(indicator = dplyr::recode(indicator,
-                                          "TX_CURR_W_TPT_last7Mo"= "Actively on TPT",
-                                          "TX_CURR_TB_tto" = "Recent Active TB TX",
-                                          "TX_CURR_TPT_Not_Comp_POS_Screen" = "Recent Pos TB Screen",
-                                          "TX_CURR_TPT_Com" = "TPT Completed",
-                                          "TPT_candidates" = "TPT Candidates",
-                                          "TPT_ineligible" = "TPT Ineligible",
-                                          "TX_CURR_TPT_Not_Comp" = "TPT Not Comp"),
-                Period = {month}
-  ) %>%
-  dplyr::filter(!indicator %in% c("TX_CURR_Eleg_TPT_Init", "TX_CURR_Eleg_TPT_Comp")) %>%
-  dplyr::select(-c(No))
-
-#---- WRITE MONTHLY ALL IP TPT CSV TO DISK -----------------------
-
-readr::write_csv(
-  tpt_tidy,
-  {monthly_dataset})
-
-#---- DEFINE PATH AND SURVEY ALL MONTHLY TPT DATASETS THAT NEED TO BE COMBINED FOR HISTORIC DATASET ---------------------------------
-
-historic_files <- dir({historic_files_path}, pattern = "*.csv")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
-
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-
-tpt_tidy_history <- historic_files %>%
-  map(~ read_csv(file.path(historic_files_path, .))) %>%
-  reduce(rbind) %>%
-  dplyr::left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>% 
-  dplyr::select(-c(Province, District, `Health Facility`)) %>% 
-  dplyr::rename(orgunituid = DATIM_code,
-                Province = SNU,
-                District = Psnu,
-                Site = Sitename) %>% 
-  dplyr::relocate(Province:Site, .after = Partner)
+# detect lines not coded with datim_uids
+tpt_monthly %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
 
 
+# WRITE MONTHLY TPT CSV TO DISK ------------------------------------
 
-#---- WRITE TPT CSV TO DISK -----------------------
+
+# write to local
+readr::write_tsv(
+  tpt_monthly,
+  na = "",
+  {path_monthly_output_file})
+
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt'))
+
+
+# HISTORIC DATASET BUILD ---------------------------------
+
+
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")
+
+tpt_historic <- historic_files %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
+  reduce(rbind) 
+
+
+# JOIN METADATA & CLEAN DATAFRAME -----------------------
+
+
+tpt_historic_meta <- clean_em_tpt(df = tpt_historic)
+
+tpt_historic_meta %>% 
+  distinct(partner)
+
+
+# PLOTS & TABLES ---------------------------------------------------------------
+
+
+tbl <- tpt_historic_meta %>%
+  select(indicator, period, value) %>% 
+  filter(period >= month_lag6) %>% 
+  arrange((period)) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format = "%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = !c(indicator), 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(200),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique TPT Enhanced Monitoring - 6 Month Trend") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring Reporting") 
+
+
+tbl
+
+
+# WRITE FINAL OUTPUTS ----------------------------------------------
+
+
+# write to local
+readr::write_tsv(
+  tpt_historic_meta,
+  "Dataout/em_tpt.txt")
+
+# write to Google Drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
+
+
+# OUTPUT DATASET FOR SIMS PRIOTIZATION ------------------------------------
+
+
+sims_indicator <- tpt_historic_meta %>% 
+  filter(indicator %in% c("TPT Completed/Active", "TX_CURR"),
+         period == max(period)) %>% 
+  pivot_wider(names_from = indicator, values_from = value) %>% 
+  group_by(period, datim_uid, snu, psnu, sitename) %>% 
+  summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE),
+            TPT_CUM = sum(`TPT Completed/Active`, na.rm = TRUE)) %>% 
+  mutate(TPT_CUM_PER = TPT_CUM / TX_CURR) %>% 
+  ungroup() %>% 
+  select(snu, 
+         psnu, 
+         sitename,
+         orgunituid = datim_uid,
+         TPT_CUM_PER)
 
 readr::write_tsv(
-  tpt_tidy_history,
-  {historic_dataset})
-
-
-
-
-#---- TROUBLESHOOTING -----------------------
-
-m3_9 <- read_csv("Data/Ajuda/ER_DSD_TPT/_CompileHistoric/TPT_2021_03_09.csv")
-
-#---- ROW BIND ALL IP SUBMISSION AND GENERATE OUTPUT -----------------------
-
-tpt_tidy_history <- m3_9 %>%
-  dplyr::left_join(ajuda_site_map, by = c("DATIM_code" = "orgunituid")) %>% 
-  dplyr::select(-c(Province, District, `Health Facility`)) %>% 
-  dplyr::rename(orgunituid = DATIM_code,
-                Province = SNU,
-                District = Psnu,
-                Site = Sitename) %>% 
-  dplyr::relocate(Province:Site, .after = Partner)
-
-readr::write_tsv(
-  tpt_tidy_history,
-  "Dataout/em_tpt_alt.txt")
-
-
-
-tpt_tidy_history <- rbind(m3, m4, m5, m6, m7, m8, m9)
+  sims_indicator,
+  "~/GitHub/SIMS/Data/tpt_comp.txt")
 

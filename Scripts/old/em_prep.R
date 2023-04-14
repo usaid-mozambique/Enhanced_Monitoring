@@ -1,194 +1,169 @@
-#-----------------------------------------------------------------------------------
-##  LOAD CORE TIDYVERSE & OTHER PACKAGES
+rm(list = ls())
+
+# DEPENDENCIES ------------------------------------------------------------
+
 
 library(tidyverse)
+library(mozR)
 library(glamr)
+library(googlesheets4)
+library(googledrive)
+library(fs)
+library(lubridate)
 library(janitor)
 library(readxl)
 library(openxlsx)
 library(glue)
-library(ggthemes)
-
-# DEFINE HFR PERIOD AND SET PATH -----------------------------------------------------------------------------------
-# 
-
-month <- "2021-09-01"
-date_open <- "2021-07-01" # ONLY NEEDED FOR CIRG
-date_close <- "2021-09-01" # ONLY NEEDED FOR CIRG
-date_cirg <- "FY21 Q4" # ONLY NEEDED FOR CIRG
-input <- "C:/Users/josep/Documents/R/r_projects/Hfr"
-
-# IMPORT DATASET -----------------------------------------------------------------------------------
-# 
-# DATASET SOURCE: MONTHLY ECHO PREP SUBMISSION THAT ACCOMPANIES ER/DSD SUBMISSION
-
-prep_compile <- read_excel("Data/Ajuda/PrEP/prep_compile.xlsx", .name_repair = "universal") %>%
-  glimpse()
-
-ajuda_site_map <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>%
-  dplyr::select(orgunituid, SNU, Psnu, Sitename) %>%
-  dplyr::rename(psnu = Psnu,
-                orgunit = Sitename,
-                snu = SNU)
-
-ajuda_site_map_2 <- read_excel("~/GitHub/AJUDA_Site_Map/Dataout/ajuda_site_map_148.xlsx") %>% 
-  dplyr::select(-c(sisma_id, SNU, Psnu, Sitename)) %>% 
-  dplyr::rename(partner = `IP FY20`)
-
-# PROCESS DATASET & CREATE ENHANCED MONITORING DATAFRAME -----------------------------------------------------------------------------------
-# 
-
-em_prep_base <- prep_compile %>%
-  tidyr::pivot_longer(cols= !c(Site, DATIM_Code, Month), names_to = "indicator", values_to = "value") %>% 
-  dplyr::mutate(
-    sex = dplyr::case_when(stringr::str_detect(indicator, "_female") ~ "Female",
-                           stringr::str_detect(indicator, "_male") ~ "Male"),
-    age = dplyr::case_when(stringr::str_detect(indicator, "_15_19") ~ "15-19",
-                           stringr::str_detect(indicator, "_20_24") ~ "20-24",
-                           stringr::str_detect(indicator, "_25_49") ~ "25-49",
-                           stringr::str_detect(indicator, "_50.") ~ "50+"),
-    poptype = dplyr::case_when(stringr::str_detect(indicator, "PWID") ~ "PWID",
-                               stringr::str_detect(indicator, "MSM") ~ "MSM",
-                               stringr::str_detect(indicator, "TG") ~ "TG",
-                               stringr::str_detect(indicator, "FSW") ~ "FSW",
-                               stringr::str_detect(indicator, "Pregnant.breastfeeding.women") ~ "P/LW",
-                               stringr::str_detect(indicator, "SDC") ~ "Serodiscordant Couples",
-                               stringr::str_detect(indicator, "People.in.prison.and.other.closed.settings") ~ "Prisoners etc.",
-                               stringr::str_detect(indicator, "AGYW") ~ "AGYW",
-                               stringr::str_detect(indicator, "Custom") ~ "Other"),
-    indicator_2 = dplyr::case_when(stringr::str_detect(indicator, "Number.of.clients.HIV.tested.for.PrEP.initiation") ~ "PrEP_SCREEN",
-                                   stringr::str_detect(indicator, "Number.of.clients.screened.for.initiation.testing.negative") ~ "PrEP_ELIGIBLE",
-                                   stringr::str_detect(indicator, "Number.of.clients.initiating.PrEP.for.the.first.time") ~ "PrEP_NEW_VERIFY",
-                                   stringr::str_detect(indicator, "Number.of.clients.returning.for.1.month..initial") ~ "PrEP_1MONTH",
-                                   stringr::str_detect(indicator, "Number.of.clients.returning.for.any.subsequent.follow.up.visits") ~ "PrEP_RETURN_ALL",
-                                   stringr::str_detect(indicator, "Number.of.clients.restarting.PrEP") ~ "PrEP_RESTART",
-                                   stringr::str_detect(indicator, "Number.of.seroconversions") ~ "PrEP_SEROCON"),
-    agecoarse = dplyr::case_when(age == "<1" ~ "<15",
-                                 age == "1-9" ~ "<15",
-                                 age == "10-14" ~ "<15"),
-    agecoarse = replace_na(agecoarse, "15+")
-  ) %>%
-  tidyr::drop_na(indicator_2) %>%
-  dplyr::filter(value != 0) %>%
-  dplyr::select(-c(indicator)) %>%
-  dplyr::left_join(ajuda_site_map, c("DATIM_Code" = "orgunituid")) %>%
-  dplyr::select(c(date = Month, 
-                  site = orgunit,
-                  orgunituid = DATIM_Code,
-                  district = psnu, 
-                  province = snu,
-                  indicator = indicator_2,
-                  sex, 
-                  age, 
-                  agecoarse, 
-                  poptype, 
-                  value))
-
-em_prep <- em_prep_base %>% 
-  dplyr::group_by(date, site, orgunituid, district, province, indicator, sex, age, agecoarse, poptype) %>% 
-  summarize_at(vars(value), sum, na.rm = TRUE) %>% 
-  tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
-  dplyr::left_join(ajuda_site_map_2)
-
-# SUBSET DATAFRAME TO CREATE HFR SUBMISSION -----------------------------------------------------------------------------------
-# 
-
-hfr_prep <- em_prep_base %>%
-  dplyr::rename(val = value) %>%
-  dplyr::mutate(operatingunit = "Mozambique",
-                mech_code = "70212",
-                partner = "ECHO",
-                otherdisaggregate = "",
-                indicator= dplyr::recode(indicator, "PrEP_NEW_VERIFY" = "PrEP_NEW")) %>%
-  dplyr::filter(!is.na(age),
-                indicator == "PrEP_NEW",
-                date == as.Date(month)) %>% 
-  dplyr::select(c(date, 
-                  orgunit = site, 
-                  orgunituid, 
-                  mech_code, 
-                  partner, 
-                  operatingunit, 
-                  psnu = district, 
-                  indicator, 
-                  sex, 
-                  agecoarse, 
-                  otherdisaggregate, 
-                  val))
-
-# SUBSET DATAFRAME TO CREATE CI SUBMISSION -----------------------------------------------------------------------------------
-
-cirg_prep <- em_prep_base %>% 
-  dplyr::filter(date >= as.Date(date_open) & date <= as.Date(date_close)) %>% 
-  dplyr::filter(!indicator %in% "PrEP_RETURN_ALL") %>% 
-  dplyr::rename(val = value,
-                reportingperiod = date,
-                orgunit = site,
-                psnu = district,
-                population = poptype) %>%
-  dplyr::mutate(operatingunit = "Mozambique",
-                otherdisaggregate = "",
-                mech_code = "70212",
-                partner = "ECHO",
-                reportingperiod = date_cirg,
-                numdenom = "N",
-                population = dplyr::recode(population, 
-                                           "Serodiscordant Couples" = "Non-KP (general population)", 
-                                           "AGYW" = "Non-KP (seronegative persons in serodifferent partnerships)",
-                                           "MSM" = "Men who have sex with men (MSM)",
-                                           "FSW" = "Female sex workers (FSW)"),
-                age = dplyr::recode(age, "25-49"= "Unknown"),
-                age = if_else(indicator == "PrEP_1MONTH", "Unknown", age),
-                sex = if_else(indicator == "PrEP_1MONTH", "Unknown", sex)
-                #age = dplyr::case_when(indicator == "PrEP_1MONTH" ~ "Unknown"),
-                #sex = dplyr::case_when(indicator == "PrEP_1MONTH" ~ "Unknown")
-                ) %>% 
-  dplyr::select(reportingperiod, 
-                orgunit, 
-                orgunituid, 
-                mech_code, 
-                partner, 
-                operatingunit, 
-                psnu, 
-                indicator, 
-                sex, 
-                age, 
-                population, 
-                otherdisaggregate, 
-                numdenom, 
-                val) %>% 
-  group_by(reportingperiod, orgunit, orgunituid, mech_code, partner, operatingunit, psnu, indicator, sex, age, population, otherdisaggregate, numdenom) %>% 
-  summarize(val = sum(val)) %>% 
-  ungroup()
+library(gt)
+load_secrets() 
 
 
-# PRINT EXCEL DOCUMENTS TO COMPUTER -----------------------------------------------------------------------------------
-# 
+# VALUES & PATHS ---------------------------
 
+# update each month
+month <- "2023-02-20"
+path_monthly_input_repo <- "Data/Ajuda/ER_DSD_TPT_VL/2023_02/"
+
+# do not update each month
+dt <- base::format(as.Date(month), 
+                   "%Y_%m")
+
+file <- glue::glue("PREP_{dt}")
+
+month_lag6 <- as.Date(month) - months(5) # value for filtering gt table
+
+
+# update each month
+DOD <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_DOD.xlsx")
+ARIEL <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ARIEL.xlsx")
+CCS <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_CCS.xlsx")
+ECHO <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ECHO.xlsx")
+EGPAF <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_EGPAF.xlsx")
+ICAP <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_ICAP.xlsx")
+FGH <- glue::glue("{path_monthly_input_repo}MonthlyEnhancedMonitoringTemplates Fev_2023_FGH.xlsx")
+
+
+# do not update each month
+path_monthly_output_repo <- "Dataout/PrEP/monthly_processed/" # folder path where monthly dataset archived
+path_monthly_output_file <- path(path_monthly_output_repo, file, ext = "txt") # composite path/filename where monthly dataset saved
+path_monthly_output_gdrive <- as_id("https://drive.google.com/drive/folders/1BYq-xdMhxw8sOUHYwFiZH8_w2UsQmBun") # google drive folder where monthly dataset saved 
+path_historic_output_file <- "Dataout/em_prep.txt" # folder path where monthly dataset archived
+path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ") # google drive folder where historic dataset saved
+
+# METADATA -----------------------------------------------------------
+
+
+ajuda_site_map <- pull_sitemap()
+
+
+# FUNCTIONS RUN -------------------------------------------------
+
+
+dod <- reshape_em_prep(DOD, "JHPIEGO-DoD")
+echo <- reshape_em_prep(ECHO, "ECHO")
+ariel <- reshape_em_prep(ARIEL, "ARIEL")
+ccs <- reshape_em_prep(CCS, "CCS")
+egpaf <- reshape_em_prep(EGPAF, "EGPAF")
+fgh <- reshape_em_prep(FGH, "FGH")
+icap <- reshape_em_prep(ICAP, "ICAP")
+
+
+# COMPILE DATASETS --------------------------------------------------
+
+
+prep_monthly <- bind_rows(dod, echo, ariel, ccs, egpaf, fgh, icap)
+rm(dod, echo, ariel, ccs, egpaf, fgh, icap)
+
+# detect lines not coded with datim_uids
+prep_monthly %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
+
+
+# MONTHLY FILE WRITE ------------------------------------
+
+# write to local
 readr::write_tsv(
-  em_prep,
-  "Dataout/em_prep.txt",
-  na ="")
+  prep_monthly,
+  na = "",
+  {path_monthly_output_file})
 
-openxlsx::write.xlsx(hfr_prep, file = "Dataout/HFR/hfr_prep.xlsx", sheetName = "hfr_prep")
-openxlsx::write.xlsx(cirg_prep, file = "Dataout/CIRG/cirg_prep.xlsx", sheetName = "cirg_prep")
+# write to google drive
+drive_put(path_monthly_output_file,
+          path = path_monthly_output_gdrive,
+          name = glue({file}, '.txt'))
 
-# GGPLOT VISUALS -----------------------------------------------------------------------------------
-# 
 
-em_prep_new <- em_prep_base %>% 
-  dplyr::filter(indicator == "PrEP_NEW_VERIFY") %>% 
-  tidyr::drop_na(poptype) %>% 
-  dplyr::group_by(poptype, date) %>% 
-  summarize(value = sum(value))
+# HISTORIC DATASET BUILD ---------------------------------
 
-ggplot(em_prep_new, aes(date, value, fill = poptype)) +
-  geom_col() + 
-  theme_fivethirtyeight() +
-  theme(plot.title = element_text(size = 12, face = "bold"),
-        plot.caption = element_text(size = 9),
-        axis.text = element_text(size = 10),
-        legend.position="right", legend.direction = "vertical") +
-  labs(title = "PrEP_NEW Trend",
-       caption = "Data source: ECHO Monthly PrEP Reporting")
+
+historic_files <- dir({path_monthly_output_repo}, pattern = "*.txt")  # PATH FOR PURR TO FIND MONTHLY FILES TO COMPILE
+
+prep_historic <- historic_files %>%
+  map(~ read_tsv(file.path(path_monthly_output_repo, .))) %>%
+  reduce(rbind)
+
+
+# METADATA JOIN ---------------------------------
+
+
+prep_historic_meta <- clean_em_prep(prep_historic)
+
+
+# PLOTS & TABLES ---------------------------------------------------------------
+
+tbl <- prep_historic_meta %>%
+  pivot_longer(cols = PrEP_Eligible:PrEP_CT_3months, names_to = "indicator", values_to = "value") %>% 
+  select(indicator, period, value) %>% 
+  filter(period >= month_lag6) %>% 
+  arrange((period)) %>% 
+  mutate(row_n = row_number(),
+         period = as.character(period, format = "%b %y")) %>% 
+  pivot_wider(names_from = period, values_from = value) %>% 
+  group_by(indicator) %>%
+  summarize(across(where(is.double), ~ sum(.x, na.rm = TRUE))) %>% 
+  gt(rowname_col = "indicator") %>% 
+  
+  fmt_number(
+    columns = !c(indicator), 
+    rows = everything(),
+    sep_mark = ",",
+    decimals = 0) %>% 
+  
+  cols_width(
+    indicator ~ px(200),
+    everything() ~ px(100)) %>% 
+  
+  tab_style(
+    style = cell_borders(
+      sides = "right",
+      weight = px(1),),
+    locations = cells_body(
+      columns = everything(),
+      rows = everything())) %>% 
+  
+  tab_options(
+    table.font.size = 18,
+    table.font.names = "SourceSansPro-Regular",
+    footnotes.font.size = 8) %>% 
+  
+  tab_header(title = "Mozambique PrEP Enhanced Monitoring - 6 Month Trend") %>% 
+  tab_source_note("Source: AJUDA Enhanced Monitoring") 
+
+
+tbl
+
+
+
+# OUTPUT WRITE ----------------------------------------------
+
+# write to local
+readr::write_tsv(
+  prep_historic_meta,
+  "Dataout/em_prep.txt")
+
+# write to google drive
+drive_put(path_historic_output_file,
+          path = path_historic_output_gdrive)
+
 
