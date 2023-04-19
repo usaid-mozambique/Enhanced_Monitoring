@@ -20,84 +20,70 @@ load_secrets()
 # DEFINE PATHS ------------------------------------------------------------
 
 
-ats_results_2022_path <- "Data/MISAU/ATS/ats_results_2022.csv"
+year <- "2023"
 
-ats_hist_2022_path <- "Data/MISAU/ATS/ats_hist_2022.csv"
+ats_results_path <- glue::glue("Data/MISAU/ATS/ats_results_{year}.csv") # saved report "ats_resultados"
+ats_hist_path <- glue::glue("Data/MISAU/ATS/ats_hist_{year}.csv")       # saved report  "ats_hist_chave
+ats_ci_path <- glue::glue("Data/MISAU/ATS/ats_ci_lig_{year}.csv")
+ats_smi_path <- glue::glue("Data/MISAU/ATS/ats_smi_{year}.csv")
+ats_ccsd_path <- glue::glue("Data/MISAU/ATS/ats_ccs_ccd_{year}.csv")    # saved report "ats_smi_ccs_ccd"
+ats_saaj_cm_path <- glue::glue("Data/MISAU/ATS/ats_saaj_cm_{year}.csv")    # saved report "ats_saaj_cm"
 
-ats_ci_2022_path <- "Data/MISAU/ATS/ats_ci_lig_2022.csv"
-
-ats_smi_2022_path <- "Data/MISAU/ATS/ats_smi_2022.csv"
+file_output <- glue::glue("Dataout/HTS/ats_all_{year}.txt")
 
 
 # FUNCTIONAL -----------------------------------------------------------
 
 
-ats_results <- clean_sisma_csv(ats_results_2022_path) %>% 
+
+ats_results <- clean_sisma_csv(ats_results_path) %>%
   parse_sisma_ats_results()
 
-ats_history <- clean_sisma_csv(ats_hist_2022_path) %>% 
+ats_history <- clean_sisma_csv(ats_hist_path) %>%
   parse_sisma_ats_history()
 
-ats_index <- clean_sisma_csv(ats_ci_2022_path) %>% 
+ats_index <- clean_sisma_csv(ats_ci_path) %>%
   parse_sisma_ats_index()
 
-ats_smi <- clean_sisma_csv(ats_smi_2022_path) %>%
+ats_smi <- clean_sisma_csv(ats_smi_path) %>%
   parse_sisma_ats_mch()
 
-ats_compile_2022 <- bind_rows(ats_results, ats_history, ats_index, ats_smi)
+ats_ccsd <- clean_sisma_csv(ats_ccsd_path) %>% 
+  parse_sisma_ats_ccsd()
+
+ats_saaj_cm <- clean_sisma_csv(ats_saaj_cm_path) %>% 
+  parse_sisma_ats_saaj_cm()
+
+
+ats_compile <- bind_rows(ats_results, ats_history, ats_index, ats_smi, ats_ccsd, ats_saaj_cm)
+
+
+# IN-DEV ------------------------------------------------------------------
+
+
+
+
 
 
 # WRITE ------------------------------------------------------------------
 
 readr::write_tsv(
-  ats_compile_2022,
-  "Dataout/HTS/ats_compile_2022.txt",
+  ats_compile,
+  file_output,
   na = "")
 
 
 
-ats_reg_2019 <- read_delim("Dataout/HTS/ats_2019.txt", 
-                       delim = "\t", escape_double = FALSE, 
-                       trim_ws = TRUE)
-
-ats_reg_2020 <- read_delim("Dataout/HTS/ats_2020.txt", 
-                       delim = "\t", escape_double = FALSE, 
-                       trim_ws = TRUE)
-
-ats_reg_2021 <- read_delim("Dataout/HTS/ats_2021.txt", 
-                       delim = "\t", escape_double = FALSE, 
-                       trim_ws = TRUE)
-
-ats_smi_2019_2021 <- read_delim("Dataout/HTS/ats_smi_2019_2021.txt", 
-                           delim = "\t", escape_double = FALSE, 
-                           trim_ws = TRUE)
-
-compile <- bind_rows(ats_reg_2019, ats_reg_2020, ats_reg_2021, ats_smi_2019_2021)
-
-compile_2019 <- compile %>% 
-  filter(period < "2020-01-01")
-
-compile_2020 <- compile %>% 
-  filter(period > "2019-12-31" & period < "2021-01-01")
-
-compile_2021 <- compile %>% 
-  filter(period > "2020-12-31" & period < "2022-01-01")
 
 
-readr::write_tsv(
-  compile_2019,
-  "Dataout/HTS/ats_compile_2019.txt",
-  na = "")
 
-readr::write_tsv(
-  compile_2020,
-  "Dataout/HTS/ats_compile_2020.txt",
-  na = "")
 
-readr::write_tsv(
-  compile_2021,
-  "Dataout/HTS/ats_compile_2021.txt",
-  na = "")
+
+
+
+
+
+
 
 
 

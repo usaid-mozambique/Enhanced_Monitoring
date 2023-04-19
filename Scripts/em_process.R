@@ -22,9 +22,8 @@ load_secrets()
 
 
 folder_month <- "2023_03"
+path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/") # paths for inmporting monthly ip submissions
 
-# paths for inmporting monthly ip submissions
-path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
 
 
