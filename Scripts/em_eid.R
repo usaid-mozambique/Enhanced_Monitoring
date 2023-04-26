@@ -55,6 +55,21 @@ ajuda_site_map <- pull_sitemap() %>%
          partner = partner_pepfar_clinical,
          starts_with("his_"))
 
+psnuuid_map <- pull_sitemap(sheetname = "list_psnu") %>% 
+  select(psnu,
+         psnuuid)
+
+cntry <- "Mozambique"
+uid <- get_ouuid(cntry)
+datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>% 
+  filter(!is.na(facility) & !is.na(psnu)) %>% 
+  select(datim_uid = orgunituid,
+         snu = snu1,
+         psnu = community, # changed to community with update to datim
+         sitename = facility) %>% 
+  arrange(snu, psnu, sitename)
+
+
 # SUBMISSION CHECKS -------------------------------------------------------
 
 
@@ -108,8 +123,22 @@ disa_meta <- disa_temp %>%
   mutate(ajuda = replace_na(ajuda, 0)) %>% 
   relocate(c(ajuda, sisma_uid, datim_uid), .before = disa_uid)
 
+
 # number of sites missing datim_uid coding
 disa_meta %>% 
+  filter(is.na(datim_uid)) %>% 
+  group_by(snu) %>% 
+  distinct(sitename) %>% 
+  summarise(n())
+
+# REMOVE ROWS WITHOUT DATIM UID & CLEAN -----------------------------------
+
+disa_final <- clean_disa_eid(disa_meta)
+
+# CHECKS --------------------------
+
+# number of sites missing datim_uid coding
+disa_final %>% 
   filter(is.na(datim_uid)) %>% 
   group_by(snu) %>% 
   distinct(sitename) %>% 
@@ -126,4 +155,13 @@ readr::write_tsv(
   disa_meta,
   {file_historic_output_local},
   na = "")
+
+
+
+
+
+
+
+
+
 

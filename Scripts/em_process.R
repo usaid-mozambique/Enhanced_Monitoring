@@ -1,4 +1,6 @@
 
+# write_tsv NA values to ""
+# check monthly submission headers
 
 # DEPENDENCIES ------------------------------------------------------------
 
@@ -22,10 +24,18 @@ load_secrets()
 
 
 folder_month <- "2023_03"
+
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/") # paths for inmporting monthly ip submissions
 
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
 
+# paths for saving monthly datasets on local drive
+path_monthly_imer_output_file <- glue::glue("Dataout/IMER/monthly_processed/IMER_{folder_month}.txt")
+path_monthly_prep_output_file <- glue::glue("Dataout/PrEP/monthly_processed/PREP_{folder_month}.txt")
+path_monthly_dsd_output_file <- glue::glue("Dataout/DSD/monthly_processed/DSD_{folder_month}.txt")
+path_monthly_mi_output_file <- glue::glue("Dataout/MI/monthly_processed/MI_{folder_month}.txt")
+path_monthly_tpt_output_file <- glue::glue("Dataout/TPT/monthly_processed/TPT_{folder_month}.txt")
+path_monthly_txtb_output_file <- glue::glue("Dataout/TXTB/monthly_processed/TXTB_{folder_month}.txt")
 
 # paths for saving monthly datasets on google drive
 path_monthly_imer_output_gdrive <- as_id("https://drive.google.com/drive/folders/12bkLnrQNXbKpbyo-zwk9dmxS6NHDyLwU")
@@ -34,7 +44,6 @@ path_monthly_dsd_output_gdrive <- as_id("https://drive.google.com/drive/folders/
 path_monthly_mi_output_gdrive <- as_id("https://drive.google.com/drive/folders/1RC5VFhD7XkuptW7o3zd21ujY6CefcTyv")
 path_monthly_tpt_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") 
 path_monthly_txtb_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zKg8l6bmO_6uk9GoOmxYsAWP3msHtjB3")
-
 
 # paths for saving historic datasets on local drive
 path_historic_imer_output_file <- "Dataout/em_imer.txt"
@@ -119,32 +128,32 @@ df_em_txtb %>%
 # write to local
 readr::write_tsv(
   df_em_imer,
-  path_monthly_output_file <- glue::glue("Dataout/IMER/monthly_processed/IMER_{folder_month}.txt"))
+  path_monthly_imer_output_file)
 
 # write to local
 readr::write_tsv(
   df_em_prep,
-  path_monthly_output_file <- glue::glue("Dataout/PrEP/monthly_processed/PREP_{folder_month}.txt"))
+  path_monthly_prep_output_file)
 
 # write to local
 readr::write_tsv(
   df_em_dsd,
-  path_monthly_output_file <- glue::glue("Dataout/DSD/monthly_processed/DSD_{folder_month}.txt"))
+  path_monthly_dsd_output_file)
 
 # write to local
 readr::write_tsv(
   df_em_mi,
-  path_monthly_output_file <- glue::glue("Dataout/MI/monthly_processed/MI_{folder_month}.txt"))
+  path_monthly_mi_output_file)
 
 # write to local
 readr::write_tsv(
   df_em_tpt,
-  path_monthly_output_file <- glue::glue("Dataout/TPT/monthly_processed/TPT_{folder_month}.txt"))
+  path_monthly_tpt_output_file)
 
 # write to local
 readr::write_tsv(
   df_em_txtb,
-  path_monthly_output_file <- glue::glue("Dataout/TXTB/monthly_processed/TXTB_{folder_month}.txt"))
+  path_monthly_txtb_output_file)
 
 
 
@@ -219,7 +228,7 @@ txtb_historic %>%
 
 plot_em_imer(imer_historic)
 plot_em_prep(prep_historic)
-plot_em_dsd(dsd_historic) # data completeness problems for indicators
+plot_em_dsd(dsd_historic)
 plot_em_mi(mi_historic)
 plot_em_tpt(tpt_historic)
 plot_em_txtb(txtb_historic)
