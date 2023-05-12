@@ -23,7 +23,7 @@ load_secrets()
 # DEFINE GLOBAL VARIABLES ---------------------------------------------------------------
 
 
-folder_month <- "2023_03"
+folder_month <- "2023_04"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/") # paths for inmporting monthly ip submissions
 
@@ -79,7 +79,7 @@ df_em_dsd <- input_files %>%
   map(~ reshape_em_dsd(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
   reduce(rbind)
 
-# mi
+# mi  the miscalc looks ok through this step
 df_em_mi <- input_files %>%
   map(~ reshape_em_mi(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
   reduce(rbind)
@@ -92,7 +92,11 @@ df_em_tpt <- input_files %>%
 # txtb
 df_em_txtb <- input_files %>%
   map(~ reshape_em_txtb(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
-  reduce(rbind)
+  reduce(rbind) %>% 
+  tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
+  dplyr::group_by(partner, snu, psnu, sitename, datim_uid, period, disaggregate, sex, age) %>% 
+  summarise(across(starts_with("TX_"), ~ mean(.x, na.rm = TRUE))) %>% 
+  ungroup()
 
 
 # VALIDATE MONTHLY DATIM_UIDS --------------------------------------------------
@@ -282,4 +286,44 @@ drive_put(path_historic_tpt_output_file,
 # txtb
 drive_put(path_historic_txtb_output_file,
           path = path_historic_output_gdrive)
+
+
+
+# USAID SPECIFIC OUTPUTS --------------------------------------------------
+
+df_sitemap <- pull_sitemap()
+df_psnuuid <- pull_sitemap(sheetname = "list_psnu")
+
+mi_historic_vl_dashboard <- mi_historic %>% 
+  select(datim_uid:program_mi, starts_with("cv")) %>% 
+  pivot_longer(starts_with("cv"), names_to = "indicator", values_to = "value") %>% 
+  filter(!is.na(value),
+         period > "2022-05-20") %>% 
+  select(!c(sisma_uid, sisma_uid_datim_map, site_nid, numdenom, program_ap3, program_mi)) %>% 
+  rename(ageasentered = age) %>% 
+  mutate(source = "MI",
+         sex = NA_character_) %>% 
+  left_join(df_sitemap %>% select(datim_uid, sisma_uid, site_nid, his_emr, his_epts, his_idart, his_disa), by = "datim_uid") %>% 
+  left_join(df_psnuuid %>% select(psnu, psnuuid), by = "psnu") %>% 
+  select(datim_uid,
+         sisma_uid,
+         snu,
+         psnu,
+         psnuuid,
+         sitename, 
+         period,
+         starts_with("his_"),
+         source,
+         partner,
+         pop_type,
+         sex,
+         ageasentered,
+         indicator,
+         value) %>% 
+  glimpse()
+
+
+readr::write_tsv(
+  mi_historic_vl_dashboard,
+  "Dataout/mi_historic_vl_dashboard.txt")
 

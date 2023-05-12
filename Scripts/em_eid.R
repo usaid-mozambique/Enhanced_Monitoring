@@ -23,8 +23,8 @@ load_secrets()
 
 # PATHS & VALUES --------------------------------
 
-month_input <- "2023-02-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Fevereiro 2023.xlsx"
+month_input <- "2023-04-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Abril 2023.xlsx"
 
 dt <- base::format(as.Date(month_input), 
                    "%Y_%m")
@@ -152,7 +152,7 @@ disa_final %>%
 # SAVE TO DISK -------------------------
 
 readr::write_tsv(
-  disa_meta,
+  disa_final,
   {file_historic_output_local},
   na = "")
 
