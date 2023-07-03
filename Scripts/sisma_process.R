@@ -25,51 +25,17 @@ hiv_tarv_path <- glue::glue("Data/MISAU/CT/tarv_{year}.csv")
 # STATUS ------------------------------------------------------------------
 
 
-df_1 <- process_sisma_csv(ats_results_path, type = "ATS Result") # functional
-df_2 <- process_sisma_csv(ats_hist_path, type = "ATS History")   # functional
-df_3 <- process_sisma_csv(ats_ci_path, type = "ATS CI")          # functional
-df_4 <- process_sisma_csv(ats_ccsd_path, type = "ATS CCSD")      # functional
-df_5 <- process_sisma_csv(ats_saaj_path, type = "ATS SAAJ")      # functional prior to indicator map change
-df_6 <- process_sisma_csv(ats_smi_path, type = "ATS SMI")        # functional prior to indicator map change
-df_7 <- process_sisma_csv(ats_auto_path, type = "ATS Auto")      # functional
-df_8 <- process_sisma_csv(hiv_tarv_path, type = "HIV TARV")      # NOT TESTED functional
+df_ats <- bind_rows(process_sisma_csv(ats_results_path, type = "ATS Result"), # functional
+                    process_sisma_csv(ats_hist_path, type = "ATS History"),   # functional
+                    process_sisma_csv(ats_ci_path, type = "ATS CI"),          # functional
+                    process_sisma_csv(ats_ccsd_path, type = "ATS CCSD"),      # functional
+                    process_sisma_csv(ats_saaj_path, type = "ATS SAAJ"),      # functional prior to indicator map change
+                    process_sisma_csv(ats_smi_path, type = "ATS SMI")         # functional prior to indicator map change
+                    )
 
+df_autoteste <- process_sisma_csv(ats_auto_path, type = "ATS Auto")      # functional
 
-df_c <- bind_rows(df_1, df_2, df_3, df_4, df_5, df_6)
+df_tarv <- process_sisma_csv(hiv_tarv_path, type = "HIV TARV")      # NOT TESTED functional
 
-# FUNCTIONAL -----------------------------------------------------------
+df_cpn <- process_sisma_csv(cpn_path, type = "CPN") 
 
-df <- clean_sisma_csv(hiv_tarv_path)
-
-df_function_parse <- df %>%
-  parse_sisma_hiv_tarv()
-
-
-
-data <- as.tibble(data_sisma_ats_results)
-
-
-# EXPIREMENT FUNCTION -----------------------------------------------------
-
-df_function_parse <- df %>%
-  dplyr::left_join(data_sisma_hiv_tarv, by = "indicator") %>%
-  tidyr::drop_na(tidyselect::any_of(c("indicator_new", "value"))) %>%
-  dplyr::select(sisma_uid, snu, psnu, sitename, period, indicator = indicator_new, age, sex, exit_type, value)
-sum(df_function_parse$value, na.rm=T)
-
-
-
-df_function_parse <- df %>%
-  dplyr::left_join(data_sisma_hiv_tarv, by = "indicator") %>%
-  filter_all(any_vars(is.na(.))) %>%
-  dplyr::select(sisma_uid, snu, psnu, sitename, period, indicator = indicator_new, age, sex, exit_type, value)
-sum(df_function_parse$value, na.rm=T)
-
-
-df_function_parse <- df %>%
-  dplyr::left_join(data_sisma_hiv_tarv, by = "indicator") %>%
-  dplyr::filter(!is.na(value)) %>% 
-  dplyr::filter(!is.na(indicator_new)) %>% 
-  dplyr::select(sisma_uid, snu, psnu, sitename, period, indicator = indicator_new, age, sex, exit_type, value)
-
-sum(df_function_parse$value, na.rm=T)

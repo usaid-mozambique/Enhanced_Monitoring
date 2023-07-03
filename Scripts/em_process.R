@@ -20,13 +20,12 @@ library(gt)
 load_secrets() 
 
 
-# DEFINE GLOBAL VARIABLES ---------------------------------------------------------------
+# GLOBAL VARIABLES ---------------------------------------------------------------
 
+# folder where monthly submissions are stored. Update monthly!
+folder_month <- "2023_05"
 
-folder_month <- "2023_04"
-
-path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/") # paths for inmporting monthly ip submissions
-
+path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
 
 # paths for saving monthly datasets on local drive
@@ -53,16 +52,15 @@ path_historic_mi_output_file <- "Dataout/em_mi.txt"
 path_historic_tpt_output_file <- "Dataout/em_tpt.txt"
 path_historic_txtb_output_file <- "Dataout/em_txtb.txt"
 
-
 # path for saving historical datasets on google drive
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
 
 
-# LOAD DATA ---------------------------------------------------------------
+# 1. LOAD SITE META DATA ---------------------------------------------------------------
 
 ajuda_site_map <- pull_sitemap()
 
-# PROCESS MONTHLY SUBMISSIONS ----------------------------------------------------------
+# 2.1 PROCESS MONTHLY SUBMISSIONS ----------------------------------------------------------
 
 # imer
 df_em_imer <- input_files %>%
@@ -99,7 +97,7 @@ df_em_txtb <- input_files %>%
   ungroup()
 
 
-# VALIDATE MONTHLY DATIM_UIDS --------------------------------------------------
+# 2.2 VALIDATE MONTHLY DATIM_UIDS --------------------------------------------------
 
 
 df_em_imer %>% 
@@ -127,41 +125,64 @@ df_em_txtb %>%
   anti_join(ajuda_site_map, by = "datim_uid")
 
 
-# WRITE MONTHLY DATASETS TO DISK ---------------------------------------------------
+# 2.3 WRITE MONTHLY DATASETS TO DISK ---------------------------------------------------
 
-# write to local
+# imer
 readr::write_tsv(
   df_em_imer,
   path_monthly_imer_output_file)
 
-# write to local
+# prep
 readr::write_tsv(
   df_em_prep,
   path_monthly_prep_output_file)
 
-# write to local
+# dsd
 readr::write_tsv(
   df_em_dsd,
   path_monthly_dsd_output_file)
 
-# write to local
+# mi
 readr::write_tsv(
   df_em_mi,
   path_monthly_mi_output_file)
 
-# write to local
+# tpt
 readr::write_tsv(
   df_em_tpt,
   path_monthly_tpt_output_file)
 
-# write to local
+# txtb
 readr::write_tsv(
   df_em_txtb,
   path_monthly_txtb_output_file)
 
 
+# 2.4 WRITE MONTHLY TO GOOGLE DRIVE --------------------------------------------------
 
-# BUILD HISTORICAL DATASETS -----------------------------------------------
+
+# imer
+drive_put(path_monthly_imer_output_file,
+          path = path_monthly_imer_output_gdrive)
+# prep
+drive_put(path_monthly_prep_output_file,
+          path = path_monthly_prep_output_gdrive)
+# dsd
+drive_put(path_monthly_dsd_output_file,
+          path = path_monthly_dsd_output_gdrive)
+# mi
+drive_put(path_monthly_mi_output_file,
+          path = path_monthly_mi_output_gdrive)
+# tpt
+drive_put(path_monthly_tpt_output_file,
+          path = path_monthly_tpt_output_gdrive)
+# txtb
+drive_put(path_monthly_txtb_output_file,
+          path = path_monthly_txtb_output_gdrive)
+
+
+# 3.1 BUILD HISTORICAL DATASETS -----------------------------------------------
+
 
 imer_historic_files <- dir("Dataout/IMER/monthly_processed/", pattern = "*.txt")
 prep_historic_files <- dir("Dataout/PrEP/monthly_processed/", pattern = "*.txt")
@@ -174,12 +195,12 @@ tx_tb_historic_files <- dir("Dataout/TXTB/monthly_processed/", pattern = "*.txt"
 imer_historic <- imer_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/IMER/monthly_processed/", .))) %>%
   reduce(rbind) %>%
-  clean_em_imer()
+  clean_em_imer() 
 
 prep_historic <- prep_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/PrEP/monthly_processed/", .))) %>%
   reduce(rbind) %>%
-  clean_em_prep()
+  clean_em_prep() 
 
 dsd_historic <- dsd_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/DSD/monthly_processed/", .))) %>%
@@ -202,7 +223,8 @@ txtb_historic <- tx_tb_historic_files %>%
   clean_em_txtb()
 
 
-# REVIEW HISTORICAL DATASETS ------------------------------------------------------------
+
+# 3.2 REVIEW HISTORICAL DATASETS ------------------------------------------------------------
 
 
 imer_historic %>% 
@@ -239,7 +261,30 @@ plot_em_txtb(txtb_historic)
 
 
 
-# WRITE HISTORIC TO LOCAL DRIVE --------------------------------------------------
+# 3.3 REMOVE DATIM_UID NA DATA LINES --------------------------------------
+
+
+imer_historic <- imer_historic %>% 
+  filter(!is.na(datim_uid))
+
+prep_historic <- prep_historic %>% 
+  filter(!is.na(datim_uid))
+
+dsd_historic <- dsd_historic %>% 
+  filter(!is.na(datim_uid))
+
+mi_historic <- mi_historic %>% 
+  filter(!is.na(datim_uid))
+
+tpt_historic <- tpt_historic %>% 
+  filter(!is.na(datim_uid))
+
+txtb_historic <- txtb_historic %>% 
+  filter(!is.na(datim_uid))
+
+
+# 3.4 WRITE HISTORIC TO LOCAL DRIVE --------------------------------------------------
+
 
 readr::write_tsv(
   imer_historic,
@@ -258,6 +303,11 @@ readr::write_tsv(
   path_historic_mi_output_file)
 
 readr::write_tsv(
+  mi_historic,
+  "Dataout/em_mi_2.txt",
+  na = "NA")
+
+readr::write_tsv(
   tpt_historic,
   path_historic_tpt_output_file)
 
@@ -266,7 +316,8 @@ readr::write_tsv(
   path_historic_txtb_output_file)
 
 
-# WRITE HISTORIC TO GOOGLE DRIVE --------------------------------------------------
+# 3.4 WRITE HISTORIC TO GOOGLE DRIVE --------------------------------------------------
+
 
 # imer
 drive_put(path_historic_imer_output_file,
@@ -288,8 +339,8 @@ drive_put(path_historic_txtb_output_file,
           path = path_historic_output_gdrive)
 
 
+# 4. USAID SPECIFIC OUTPUTS --------------------------------------------------
 
-# USAID SPECIFIC OUTPUTS --------------------------------------------------
 
 df_sitemap <- pull_sitemap()
 df_psnuuid <- pull_sitemap(sheetname = "list_psnu")
@@ -325,5 +376,5 @@ mi_historic_vl_dashboard <- mi_historic %>%
 
 readr::write_tsv(
   mi_historic_vl_dashboard,
-  "Dataout/mi_historic_vl_dashboard.txt")
+  "Dataout/vl_dashboard_mi.txt")
 

@@ -24,8 +24,8 @@ load_secrets()
 # VALUES & PATHS ----------------------------------------------------------
 
 
-month_input <- "2023-04-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Abril 2023.xlsx"
+month_input <- "2023-05-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Maio 2023.xlsx"
 
 
 dt <- base::format(as.Date(month_input), 
@@ -142,6 +142,7 @@ disa_meta %>%
 
 
 disa_final <- clean_disa_vl(disa_meta)
+
 
 # CHECK UNIQUE AGE/SEX & ASSESS MISSING DATA --------------------------
 
