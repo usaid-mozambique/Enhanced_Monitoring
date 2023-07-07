@@ -2,6 +2,10 @@
 # write_tsv NA values to ""
 # check monthly submission headers
 
+# need to update mozR data file "data_em_imer_var_map" with new sheet in Excel version
+# need to update mozR reshape_em_imer function line 22 to pivot on full indicator set
+# need to replace MDS and MI headers using revised template _JLCOR
+
 # DEPENDENCIES ------------------------------------------------------------
 
 
@@ -17,7 +21,7 @@ library(readxl)
 library(openxlsx)
 library(glue)
 library(gt)
-load_secrets() 
+load_secrets()
 
 
 # GLOBAL VARIABLES ---------------------------------------------------------------
