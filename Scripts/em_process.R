@@ -2,10 +2,6 @@
 # write_tsv NA values to ""
 # check monthly submission headers
 
-# need to update mozR data file "data_em_imer_var_map" with new sheet in Excel version
-# need to update mozR reshape_em_imer function line 22 to pivot on full indicator set
-# need to replace MDS and MI headers using revised template _JLCOR
-
 # DEPENDENCIES ------------------------------------------------------------
 
 
@@ -27,7 +23,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2023_05"
+folder_month <- "2023_06"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
@@ -65,6 +61,7 @@ path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xB
 ajuda_site_map <- pull_sitemap()
 
 # 2.1 PROCESS MONTHLY SUBMISSIONS ----------------------------------------------------------
+
 
 # imer
 df_em_imer <- input_files %>%
