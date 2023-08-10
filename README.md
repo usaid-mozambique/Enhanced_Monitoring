@@ -17,4 +17,6 @@ folder_setup()
 ####Created the Ajuda folder name  inside the project
 ####Created the ER_DSD_TPT_VL folder name inside Ajuda folder and copy the new tamplate into it
 ####Load historical data on Dataout folder
+###################################################################################################
+@cicero: Always review the headers of the submitted template and compare with the last submission
 
