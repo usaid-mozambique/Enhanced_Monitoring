@@ -62,7 +62,6 @@ ajuda_site_map <- pull_sitemap()
 
 # 2.1 PROCESS MONTHLY SUBMISSIONS ----------------------------------------------------------
 
-
 # imer
 df_em_imer <- input_files %>%
   map(~ reshape_em_imer(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
@@ -99,7 +98,6 @@ df_em_txtb <- input_files %>%
 
 
 # 2.2 VALIDATE MONTHLY DATIM_UIDS --------------------------------------------------
-
 
 df_em_imer %>% 
   distinct(datim_uid, snu, psnu, sitename) %>% 
@@ -230,27 +228,27 @@ txtb_historic <- tx_tb_historic_files %>%
 
 imer_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 prep_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 dsd_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 mi_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 tpt_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 txtb_historic %>% 
   filter(is.na(datim_uid)) %>% 
-  distinct(datim_uid, snu, psnu, sitename)
+  distinct(datim_uid, snu, psnu, sitename, period)
 
 
 plot_em_imer(imer_historic)
@@ -259,7 +257,6 @@ plot_em_dsd(dsd_historic)
 plot_em_mi(mi_historic)
 plot_em_tpt(tpt_historic)
 plot_em_txtb(txtb_historic)
-
 
 
 # 3.3 REMOVE DATIM_UID NA DATA LINES --------------------------------------
@@ -305,7 +302,7 @@ readr::write_tsv(
 
 readr::write_tsv(
   mi_historic,
-  "Dataout/em_mi_2.txt",
+  path_historic_mi_output_file,
   na = "NA")
 
 readr::write_tsv(

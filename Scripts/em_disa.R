@@ -167,6 +167,14 @@ check_total_missing <- sum(disa_missing$VL, na.rm = T)
 1 - check_total_missing / check_total_vl
 
 
+disa_final %>% 
+  filter(period > max(period) - months(6)) %>% 
+  group_by(period, snu) %>% 
+  distinct(period, sitename) %>% 
+  summarise(n()) %>% 
+  arrange(snu) %>% 
+  print(n=100)
+
 # PLOT HISTORIC DATA ----------------------------------------------
 
 
