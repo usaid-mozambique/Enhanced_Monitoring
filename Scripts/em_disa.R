@@ -24,8 +24,8 @@ load_secrets()
 # VALUES & PATHS ----------------------------------------------------------
 
 
-month_input <- "2023-05-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Maio 2023.xlsx"
+month_input <- "2023-09-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Setembro 2023.xlsx"
 
 
 dt <- base::format(as.Date(month_input), 
@@ -187,8 +187,8 @@ df_vl_plot <- disa_final %>%
 df_vl_plot %>% 
   ggplot(aes(x = period, y = VL, fill = snu)) + 
   geom_col() + 
-  labs(title = "TX_CURR Trend by Partner",
-       subtitle = "Historical Trend of Patients on ART in Mozambique by PEPFAR Partner",
+  labs(title = "Testing of Viral Load Specimens by Population",
+       subtitle = "Historical trend of Viral Load specimens processed within the DISA laboratory network",
        color = "Partner") + 
   theme_solarized() + 
   theme(axis.title = element_text()) + 

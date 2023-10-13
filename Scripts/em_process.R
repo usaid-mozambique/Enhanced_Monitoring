@@ -1,6 +1,7 @@
 
 # write_tsv NA values to ""
 # check monthly submission headers
+# need to update script to include new MI indicators (CD4 and Revelacao)
 
 # DEPENDENCIES ------------------------------------------------------------
 
@@ -23,7 +24,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2023_06"
+folder_month <- "2023_09"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
@@ -35,6 +36,7 @@ path_monthly_dsd_output_file <- glue::glue("Dataout/DSD/monthly_processed/DSD_{f
 path_monthly_mi_output_file <- glue::glue("Dataout/MI/monthly_processed/MI_{folder_month}.txt")
 path_monthly_tpt_output_file <- glue::glue("Dataout/TPT/monthly_processed/TPT_{folder_month}.txt")
 path_monthly_txtb_output_file <- glue::glue("Dataout/TXTB/monthly_processed/TXTB_{folder_month}.txt")
+path_monthly_ahd_output_file <- glue::glue("Dataout/AHD/monthly_processed/AHD_{folder_month}.txt")
 
 # paths for saving monthly datasets on google drive
 path_monthly_imer_output_gdrive <- as_id("https://drive.google.com/drive/folders/12bkLnrQNXbKpbyo-zwk9dmxS6NHDyLwU")
@@ -43,6 +45,7 @@ path_monthly_dsd_output_gdrive <- as_id("https://drive.google.com/drive/folders/
 path_monthly_mi_output_gdrive <- as_id("https://drive.google.com/drive/folders/1RC5VFhD7XkuptW7o3zd21ujY6CefcTyv")
 path_monthly_tpt_output_gdrive <- as_id("https://drive.google.com/drive/folders/1JobyoQqeTP3M5VvZWMC4AMBW04nVwDeD") 
 path_monthly_txtb_output_gdrive <- as_id("https://drive.google.com/drive/folders/1zKg8l6bmO_6uk9GoOmxYsAWP3msHtjB3")
+path_monthly_ahd_output_gdrive <- as_id("https://drive.google.com/drive/folders/1lVao3i2vP6BW41A5T52jKgPbbaOVgNKG")
 
 # paths for saving historic datasets on local drive
 path_historic_imer_output_file <- "Dataout/em_imer.txt"
@@ -51,6 +54,8 @@ path_historic_dsd_output_file <- "Dataout/em_dsd.txt"
 path_historic_mi_output_file <- "Dataout/em_mi.txt"
 path_historic_tpt_output_file <- "Dataout/em_tpt.txt"
 path_historic_txtb_output_file <- "Dataout/em_txtb.txt"
+
+path_historic_ahd_output_file <- "Dataout/em_ahd.txt"
 
 # path for saving historical datasets on google drive
 path_historic_output_gdrive <- as_id("https://drive.google.com/drive/folders/1xBcPZNAeYGahYj_cXN5aG2-_WSDLi6rQ")
@@ -96,6 +101,10 @@ df_em_txtb <- input_files %>%
   summarise(across(starts_with("TX_"), ~ mean(.x, na.rm = TRUE))) %>% 
   ungroup()
 
+df_em_ahd <- input_files %>%
+  map(~ reshape_em_ahd(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
+  reduce(rbind)
+
 
 # 2.2 VALIDATE MONTHLY DATIM_UIDS --------------------------------------------------
 
@@ -120,6 +129,10 @@ df_em_tpt %>%
   anti_join(ajuda_site_map, by = "datim_uid")
 
 df_em_txtb %>% 
+  distinct(datim_uid, snu, psnu, sitename) %>% 
+  anti_join(ajuda_site_map, by = "datim_uid")
+
+df_em_ahd %>% 
   distinct(datim_uid, snu, psnu, sitename) %>% 
   anti_join(ajuda_site_map, by = "datim_uid")
 
@@ -156,6 +169,11 @@ readr::write_tsv(
   df_em_txtb,
   path_monthly_txtb_output_file)
 
+# ahd
+readr::write_tsv(
+  df_em_ahd,
+  path_monthly_ahd_output_file)
+
 
 # 2.4 WRITE MONTHLY TO GOOGLE DRIVE --------------------------------------------------
 
@@ -178,6 +196,9 @@ drive_put(path_monthly_tpt_output_file,
 # txtb
 drive_put(path_monthly_txtb_output_file,
           path = path_monthly_txtb_output_gdrive)
+# ahd
+drive_put(path_monthly_ahd_output_file,
+          path = path_monthly_ahd_output_gdrive)
 
 
 # 3.1 BUILD HISTORICAL DATASETS -----------------------------------------------
@@ -189,7 +210,7 @@ dsd_historic_files <- dir("Dataout/DSD/monthly_processed/", pattern = "*.txt")
 mi_historic_files <- dir("Dataout/MI/monthly_processed/", pattern = "*.txt")
 tpt_historic_files <- dir("Dataout/TPT/monthly_processed/", pattern = "*.txt")
 tx_tb_historic_files <- dir("Dataout/TXTB/monthly_processed/", pattern = "*.txt")
-
+ahd_historic_files <- dir("Dataout/AHD/monthly_processed/", pattern = "*.txt")
 
 imer_historic <- imer_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/IMER/monthly_processed/", .))) %>%
@@ -209,7 +230,7 @@ dsd_historic <- dsd_historic_files %>%
 mi_historic <- mi_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/MI/monthly_processed/", .))) %>%
   reduce(rbind) %>%
-  clean_em_mi() 
+  clean_em_mi()
 
 tpt_historic <- tpt_historic_files %>%
   map(~ read_tsv(file.path("Dataout/TPT/monthly_processed/", .))) %>%
@@ -221,6 +242,10 @@ txtb_historic <- tx_tb_historic_files %>%
   reduce(rbind) %>%
   clean_em_txtb()
 
+ahd_historic <- ahd_historic_files %>% 
+  map(~ read_tsv(file.path("Dataout/AHD/monthly_processed/", .))) %>%
+  reduce(rbind) %>%
+  clean_em_ahd()
 
 
 # 3.2 REVIEW HISTORICAL DATASETS ------------------------------------------------------------
@@ -247,6 +272,10 @@ tpt_historic %>%
   distinct(datim_uid, snu, psnu, sitename, period)
 
 txtb_historic %>% 
+  filter(is.na(datim_uid)) %>% 
+  distinct(datim_uid, snu, psnu, sitename, period)
+
+ahd_historic %>% 
   filter(is.na(datim_uid)) %>% 
   distinct(datim_uid, snu, psnu, sitename, period)
 
@@ -280,6 +309,9 @@ tpt_historic <- tpt_historic %>%
 txtb_historic <- txtb_historic %>% 
   filter(!is.na(datim_uid))
 
+ahd_historic <- ahd_historic %>% 
+  filter(!is.na(datim_uid))
+
 
 # 3.4 WRITE HISTORIC TO LOCAL DRIVE --------------------------------------------------
 
@@ -303,7 +335,7 @@ readr::write_tsv(
 readr::write_tsv(
   mi_historic,
   path_historic_mi_output_file,
-  na = "NA")
+  na = "")
 
 readr::write_tsv(
   tpt_historic,
@@ -312,6 +344,10 @@ readr::write_tsv(
 readr::write_tsv(
   txtb_historic,
   path_historic_txtb_output_file)
+
+readr::write_tsv(
+  ahd_historic,
+  path_historic_ahd_output_file)
 
 
 # 3.4 WRITE HISTORIC TO GOOGLE DRIVE --------------------------------------------------
@@ -334,6 +370,9 @@ drive_put(path_historic_tpt_output_file,
           path = path_historic_output_gdrive)
 # txtb
 drive_put(path_historic_txtb_output_file,
+          path = path_historic_output_gdrive)
+# ahd
+drive_put(path_historic_ahd_output_file,
           path = path_historic_output_gdrive)
 
 

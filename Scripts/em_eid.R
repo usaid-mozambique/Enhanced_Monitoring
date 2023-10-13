@@ -23,8 +23,8 @@ load_secrets()
 
 # PATHS & VALUES --------------------------------
 
-month_input <- "2023-06-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Junho 2023.xlsx"
+month_input <- "2023-09-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Setembro 2023.xlsx"
 
 dt <- base::format(as.Date(month_input), 
                    "%Y_%m")
