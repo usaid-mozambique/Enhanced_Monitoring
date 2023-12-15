@@ -24,8 +24,8 @@ load_secrets()
 # VALUES & PATHS ----------------------------------------------------------
 
 
-month_input <- "2023-09-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Setembro 2023.xlsx"
+month_input <- "2023-10-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Outubro 2023.xlsx"
 
 
 dt <- base::format(as.Date(month_input), 
@@ -75,6 +75,16 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
   arrange(snu, psnu, sitename)
 
 
+# datim_orgsuids_2 <- datim_orgsuids %>% 
+#   filter(!is.na(facility) & !is.na(psnu)) %>% 
+#   select(datim_uid = orgunituid,
+#          snu = snu1,
+#          psnuuid,
+#          psnu = community, # changed to community with update to datim
+#          sitename = facility)
+#   
+# write_csv(datim_orgsuids_2, 
+#           "Documents/datim_uids.csv")
 
 # SUBMISSION CHECKS -------------------------------------------------------
 

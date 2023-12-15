@@ -24,7 +24,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2023_09"
+folder_month <- "2023_11"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
@@ -54,7 +54,6 @@ path_historic_dsd_output_file <- "Dataout/em_dsd.txt"
 path_historic_mi_output_file <- "Dataout/em_mi.txt"
 path_historic_tpt_output_file <- "Dataout/em_tpt.txt"
 path_historic_txtb_output_file <- "Dataout/em_txtb.txt"
-
 path_historic_ahd_output_file <- "Dataout/em_ahd.txt"
 
 # path for saving historical datasets on google drive
@@ -245,7 +244,8 @@ txtb_historic <- tx_tb_historic_files %>%
 ahd_historic <- ahd_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/AHD/monthly_processed/", .))) %>%
   reduce(rbind) %>%
-  clean_em_ahd()
+  clean_em_ahd() %>% 
+  filter(value > 0) # consider putting in the monthly 
 
 
 # 3.2 REVIEW HISTORICAL DATASETS ------------------------------------------------------------
