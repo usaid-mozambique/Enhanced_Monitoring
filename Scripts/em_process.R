@@ -24,7 +24,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2023_12"
+folder_month <- "2024_01"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
@@ -452,3 +452,23 @@ readr::write_tsv(
   mi_historic_vl_dashboard,
   "Dataout/vl_dashboard_mi.txt")
 
+
+
+sims_indicator <- tpt_historic %>% 
+  filter(indicator %in% c("TPT Completed/Active", "TX_CURR"),
+         period == max(period)) %>% 
+  pivot_wider(names_from = indicator, values_from = value) %>% 
+  group_by(period, datim_uid, snu, psnu, sitename) %>% 
+  summarize(TX_CURR = sum(TX_CURR, na.rm = TRUE),
+            TPT_CUM = sum(`TPT Completed/Active`, na.rm = TRUE)) %>% 
+  mutate(TPT_CUM_PER = TPT_CUM / TX_CURR) %>% 
+  ungroup() %>% 
+  select(snu, 
+         psnu, 
+         sitename,
+         orgunituid = datim_uid,
+         TPT_CUM_PER)
+
+readr::write_tsv(
+  sims_indicator,
+  "~/GitHub/MER/Data/tpt_comp.txt")
