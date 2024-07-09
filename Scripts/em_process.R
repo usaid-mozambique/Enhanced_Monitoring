@@ -24,7 +24,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2024_01"
+folder_month <- "2024_05"
 
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")

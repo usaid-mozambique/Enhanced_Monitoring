@@ -24,8 +24,8 @@ load_secrets()
 # VALUES & PATHS ----------------------------------------------------------
 
 
-month_input <- "2023-12-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Dezembro 2023.xlsx"
+month_input <- "2024-06-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de Carga Viral Junho 2024.xlsx"
 
 
 dt <- base::format(as.Date(month_input), 
@@ -73,6 +73,13 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
          psnu = community, # changed to community with update to datim
          sitename = facility) %>% 
   arrange(snu, psnu, sitename)
+
+
+# unable to access Datim through api so this is a temporary workaround.
+
+# datim_orgsuids <- read_csv("Documents/datim_uids.csv") |>
+#   arrange(snu, psnu, sitename)
+
 
 
 # datim_orgsuids_2 <- datim_orgsuids %>% 
@@ -152,6 +159,59 @@ disa_meta %>%
 
 
 disa_final <- clean_disa_vl(disa_meta)
+
+# above code is not working as two psnuuid vars are generated, neither of which has name psnuuid as required.  Investigate fix!
+
+# disa_final <- disa_meta %>%
+#   tidyr::drop_na(datim_uid) %>%
+#   dplyr::select(!c(snu, psnu, sitename)) %>%
+#   
+#   dplyr::left_join(datim_orgsuids, by = "datim_uid") %>%
+#   dplyr::left_join(ajuda_site_map, by = "datim_uid") %>%
+#   dplyr::left_join(psnuuid_map, by = "psnu") %>%
+#   
+#   select(!psnuuid.y) |> 
+#   rename(psnuuid = psnuuid.x) |> 
+#   
+#   dplyr::mutate(
+#     partner = tidyr::replace_na(partner, "MISAU"),
+#     support_type = dplyr::case_when(
+#       partner == "MISAU" ~ "Sustainability",
+#       TRUE ~ as.character("AJUDA")),
+#     
+#     agency = dplyr::case_when(
+#       partner == "MISAU" ~ "MISAU",
+#       partner == "JHPIEGO-DoD" ~ "DOD",
+#       partner == "ECHO" ~ "USAID",
+#       TRUE ~ as.character("HHS/CDC")),
+#     
+#     psnuuid = dplyr::case_when(
+#       partner == "JHPIEGO-DoD" ~ "siMZUtd2cJW",
+#       TRUE ~ psnuuid),
+#     
+#     dplyr::across(c(snu, psnu, sitename), ~ dplyr::case_when(partner == "JHPIEGO-DoD" ~ "_Military",
+#                                                              TRUE ~ .))) %>%
+#   
+#   dplyr::select(period,
+#                 sisma_uid,
+#                 datim_uid,
+#                 site_nid,
+#                 starts_with("his_"),
+#                 snu,
+#                 psnu,
+#                 psnuuid,
+#                 sitename,
+#                 support_type,
+#                 partner,
+#                 agency,
+#                 age,
+#                 group,
+#                 sex,
+#                 motive,
+#                 tat_step,
+#                 VL,
+#                 VLS,
+#                 TAT)
 
 
 # CHECK UNIQUE AGE/SEX & ASSESS MISSING DATA --------------------------

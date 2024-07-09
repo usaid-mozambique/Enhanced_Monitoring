@@ -23,8 +23,8 @@ load_secrets()
 
 # PATHS & VALUES --------------------------------
 
-month_input <- "2024-01-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Janeiro 2024.xlsx"
+month_input <- "2024-06-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Junho 2024.xlsx"
 
 dt <- base::format(as.Date(month_input), 
                    "%Y_%m")
@@ -67,6 +67,10 @@ datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_
          snu = snu1,
          psnu = community, # changed to community with update to datim
          sitename = facility) %>% 
+  arrange(snu, psnu, sitename)
+
+
+datim_orgsuids <- read_csv("Documents/datim_uids.csv") |>
   arrange(snu, psnu, sitename)
 
 
@@ -133,7 +137,61 @@ disa_meta %>%
 
 # REMOVE ROWS WITHOUT DATIM UID & CLEAN -----------------------------------
 
+
 disa_final <- clean_disa_eid(disa_meta)
+
+
+disa_final <- disa_meta %>%
+  tidyr::drop_na(datim_uid) %>%
+  dplyr::select(!c(snu, psnu, sitename)) %>%
+  
+  dplyr::left_join(datim_orgsuids, by = "datim_uid") %>%
+  dplyr::left_join(ajuda_site_map, by = "datim_uid") %>%
+  # dplyr::left_join(psnuuid_map, by = "psnu") %>%
+  
+  # select(!psnuuid.y) |>
+  # rename(psnuuid = psnuuid.x) |>
+  
+  dplyr::mutate(
+    partner = tidyr::replace_na(partner, "MISAU"),
+    support_type = dplyr::case_when(
+      partner == "MISAU" ~ "Sustainability",
+      TRUE ~ as.character("AJUDA")),
+    
+    agency = dplyr::case_when(
+      partner == "MISAU" ~ "MISAU",
+      partner == "JHPIEGO-DoD" ~ "DOD",
+      partner == "ECHO" ~ "USAID",
+      TRUE ~ as.character("HHS/CDC")),
+    
+    psnuuid = dplyr::case_when(
+      partner == "JHPIEGO-DoD" ~ "siMZUtd2cJW",
+      TRUE ~ psnuuid),
+    
+    dplyr::across(c(snu, psnu, sitename), ~ dplyr::case_when(partner == "JHPIEGO-DoD" ~ "_Military",
+                                                             TRUE ~ .))) %>%
+  
+  dplyr::select(period,
+                sisma_uid,
+                datim_uid,
+                disa_uid,
+                site_nid,
+                ajuda,
+                starts_with("his_"),
+                snu,
+                psnu,
+                psnuuid,
+                sitename,
+                support_type,
+                partner,
+                agency,
+                sex,
+                disaggregate,
+                result,
+                tat_step,
+                indicator,
+                value)
+
 
 # CHECKS --------------------------
 
@@ -156,6 +214,9 @@ readr::write_tsv(
   {file_historic_output_local},
   na = "")
 
+
+drive_put(file_historic_output_local,
+          path = path_historic_output_gdrive)
 
 
 
