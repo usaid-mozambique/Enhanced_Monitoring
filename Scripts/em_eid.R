@@ -23,8 +23,8 @@ load_secrets()
 
 # PATHS & VALUES --------------------------------
 
-month_input <- "2024-06-20"
-file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI Junho 2024.xlsx"
+month_input <- "2024-12-20"
+file_input <- "Data/Disa_new/monthly/Relatorio Mensal de DPI December 2024.xlsx"
 
 dt <- base::format(as.Date(month_input), 
                    "%Y_%m")
@@ -59,15 +59,17 @@ psnuuid_map <- pull_sitemap(sheetname = "list_psnu") %>%
   select(psnu,
          psnuuid)
 
-cntry <- "Mozambique"
-uid <- get_ouuid(cntry)
-datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>% 
-  filter(!is.na(facility) & !is.na(psnu)) %>% 
-  select(datim_uid = orgunituid,
-         snu = snu1,
-         psnu = community, # changed to community with update to datim
-         sitename = facility) %>% 
-  arrange(snu, psnu, sitename)
+# cntry <- "Mozambique"
+# uid <- get_ouuid(cntry)
+# datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>% 
+#   filter(!is.na(facility) & !is.na(psnu)) %>% 
+#   select(datim_uid = orgunituid,
+#          snu = snu1,
+#          psnu = community, # changed to community with update to datim
+#          sitename = facility) %>% 
+#   arrange(snu, psnu, sitename)
+
+
 
 
 datim_orgsuids <- read_csv("Documents/datim_uids.csv") |>
@@ -147,10 +149,10 @@ disa_final <- disa_meta %>%
   
   dplyr::left_join(datim_orgsuids, by = "datim_uid") %>%
   dplyr::left_join(ajuda_site_map, by = "datim_uid") %>%
-  # dplyr::left_join(psnuuid_map, by = "psnu") %>%
-  
-  # select(!psnuuid.y) |>
-  # rename(psnuuid = psnuuid.x) |>
+  dplyr::left_join(psnuuid_map, by = "psnu") %>%
+
+  select(!psnuuid.y) |>
+  rename(psnuuid = psnuuid.x) |>
   
   dplyr::mutate(
     partner = tidyr::replace_na(partner, "MISAU"),

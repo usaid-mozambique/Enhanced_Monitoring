@@ -24,8 +24,7 @@ load_secrets()
 # GLOBAL VARIABLES ---------------------------------------------------------------
 
 # folder where monthly submissions are stored. Update monthly!
-folder_month <- "2024_05"
-
+folder_month <- "2024_12"
 path_monthly_input_repo <- glue::glue("Data/Ajuda/ER_DSD_TPT_VL/{folder_month}/")
 input_files <- dir({path_monthly_input_repo}, pattern = "*.xlsx")
 
@@ -96,11 +95,11 @@ df_em_tpt <- input_files %>%
 # txtb
 df_em_txtb <- input_files %>%
   map(~ reshape_em_txtb(file.path(path_monthly_input_repo, .)), .progress	= TRUE) %>%
-  reduce(rbind) %>% 
-  tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
-  dplyr::group_by(partner, snu, psnu, sitename, datim_uid, period, disaggregate, sex, age) %>% 
-  summarise(across(starts_with("TX_"), ~ mean(.x, na.rm = TRUE))) %>% 
-  ungroup()
+  reduce(rbind) |> 
+  filter(value > 0)
+
+unique(df_em_txtb$disaggregate)
+unique(df_em_txtb$disaggregate_sub)
 
 # ahd
 df_em_ahd <- input_files %>%
@@ -258,8 +257,15 @@ tpt_historic <- tpt_historic_files %>%
 
 txtb_historic <- tx_tb_historic_files %>%
   map(~ read_tsv(file.path("Dataout/TXTB/monthly_processed/", .))) %>%
-  reduce(rbind) %>%
+  reduce(rbind) |> 
+  tidyr::pivot_wider(names_from = indicator, values_from = value) %>% 
+  dplyr::group_by(partner, snu, psnu, sitename, datim_uid, period, disaggregate, disaggregate_sub, sex, age) %>% 
+  summarise(across(starts_with("TX_"), ~ sum(.x, na.rm = TRUE))) %>% 
+  ungroup |> 
   clean_em_txtb()
+
+unique(txtb_historic$disaggregate)
+unique(txtb_historic$disaggregate_sub)
 
 ahd_historic <- ahd_historic_files %>% 
   map(~ read_tsv(file.path("Dataout/AHD/monthly_processed/", .))) %>%
